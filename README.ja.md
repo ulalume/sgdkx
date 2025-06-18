@@ -34,19 +34,47 @@ brew install --cask --no-quarantine wine-crossover
 
 主なコマンドは以下の通りです。
 
-- `sgdktool` : 環境チェックとヘルプ
-- `sgdktool setup` : SGDK のセットアップ（クローンとパス登録）
-- `sgdktool new` : SGDK テンプレートから新規プロジェクト作成
-- `sgdktool make` : SGDK プロジェクトのビルド
-- `sgdktool uninstall` : SGDK のアンインストールと設定削除
+- `sgdktool`  
+  環境チェック・SGDKやエミュレータの設定状況・ヘルプを表示します。  
+  サブコマンドを指定しない場合、現在のSGDK/エミュレータのセットアップ状況を確認できます。
+
+- `sgdktool setup [--dir パス] [--branch ブランチ名]`  
+  SGDK（Sega Genesis Development Kit）をダウンロード・インストールします。  
+  `--dir` でインストール先ディレクトリ（省略時は設定ディレクトリ）、`--branch` でブランチ（省略時はmaster）を指定できます。  
+  SGDKのパスやブランチはconfig.tomlに保存されます。
+
+- `sgdktool setup-emu [gens|blastem] [--dir パス]`  
+  エミュレータ（gens または blastem）をダウンロード・セットアップします。  
+  `--dir` でインストール先を指定できます（省略時はデフォルトの設定ディレクトリ）。  
+  インストールしたエミュレータのパスはconfig.tomlに保存されます。
+
+- `sgdktool new <プロジェクト名>`  
+  SGDKテンプレートから新しいプロジェクトを作成します。  
+  `<プロジェクト名>` という名前のディレクトリが作成され、その中にプロジェクトが生成されます。
+
+- `sgdktool make [--project ディレクトリ] [追加オプション...]`  
+  `make` を使ってSGDKプロジェクトをビルドします。  
+  `--project` でプロジェクトディレクトリ（省略時はカレントディレクトリ）、追加オプションでmakeに渡す引数を指定できます。
+
+- `sgdktool run [gens|blastem] [--rom パス]`  
+  エミュレータでROMファイルを実行します。  
+  エミュレータやROMファイルのパスを指定できます（省略時は自動検出/`out/rom.bin`）。  
+  エミュレータが未インストールの場合はsetup-emuの実行を促すメッセージが表示されます。
+
+- `sgdktool uninstall [--config-only]`  
+  SGDKのアンインストールと設定ファイルの削除を行います。  
+  `--config-only` を指定すると設定ファイルのみ削除し、SGDK本体は残します。  
+  また、`setup-emu` でインストールしたエミュレータ（gens/blastem）も、config.tomlに記載されたパスを参照して削除されます。
 
 ### 簡単な使い方例
 
 ```sh
 sgdktool setup
+sgdktool setup-emu
 sgdktool new your_project
 cd your_project
 sgdktool make
+sgdktool run
 ```
 
 ### 参考: コマンドなしで実行した場合の出力例
@@ -58,8 +86,10 @@ Usage: sgdktool [COMMAND]
 
 Commands:
   setup      SGDKをセットアップ（クローンとパス登録）
+  setup-emu  ROMファイル実行用のエミュレータをセットアップ
   new        SGDKテンプレートから新しいプロジェクトを作成
   make       makeを使ってプロジェクトをビルド
+  run        エミュレータでROMファイルを実行
   uninstall  SGDKインストールと設定をアンインストール
   help       Print this message or the help of the given subcommand(s)
 
@@ -75,9 +105,11 @@ Options:
 ✅ wine: /opt/homebrew/bin/wine
 
 📝 SGDK 設定情報:
-SGDK パス   : /Users/[name]/Library/Application Support/sgdktool/SGDK
+SGDK パス   : /Users/[user]/Library/Application Support/sgdktool/SGDK
 ブランチ     : master
 コミット ID : 60c99ea912387d6f5f014673d9760ef8a79e1339
+Gens パス   : /Users/[user]/Library/Application Support/sgdktool/gens/gens.exe
+blastem パス: /Users/[user]/Library/Application Support/sgdktool/blastem/blastem-win64-0.6.3-pre-b42f00a3a937/blastem.exe
 ```
 
 ---

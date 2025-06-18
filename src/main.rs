@@ -1,12 +1,17 @@
 use clap::{Parser, Subcommand};
 use dirs::config_dir;
 use fs_extra::dir::{CopyOptions, copy};
+use reqwest::blocking::get;
+use sevenz_rust;
 use std::fs;
+use std::io::copy as io_copy;
 use std::os::unix::fs::symlink;
 use std::path::{Path, PathBuf};
 use std::process::Command;
+use tempfile::NamedTempFile;
 use toml_edit::{Document, value};
 use which::which;
+use zip::ZipArchive;
 
 // 多言語化の初期化
 rust_i18n::i18n!("locales");
@@ -32,6 +37,17 @@ enum Commands {
         branch: String,
     },
 
+    /// Setup emulator for running ROM files
+    SetupEmu {
+        /// Emulator to setup (gens or blastem)
+        #[arg(default_value = "gens")]
+        emulator: String,
+
+        /// Directory to install emulator (defaults to config directory)
+        #[arg(long)]
+        dir: Option<String>,
+    },
+
     New {
         /// Project name (will be created as a directory)
         name: String,
@@ -46,6 +62,16 @@ enum Commands {
         /// Additional options to pass to make
         #[arg(last = true)]
         extra: Vec<String>,
+    },
+
+    /// Run ROM file with emulator
+    Run {
+        /// Emulator to use (gens or blastem, defaults to available emulator)
+        emulator: Option<String>,
+
+        /// ROM file path (defaults to out/rom.bin)
+        #[arg(long, default_value = "out/rom.bin")]
+        rom: String,
     },
 
     /// Uninstall SGDK installation and configuration
@@ -68,11 +94,17 @@ fn main() {
             Commands::Setup { dir, branch } => {
                 setup_sgdk(dir.as_deref(), &branch);
             }
+            Commands::SetupEmu { emulator, dir } => {
+                setup_emulator(&emulator, dir.as_deref());
+            }
             Commands::New { name } => {
                 create_project(&name);
             }
             Commands::Make { project, extra } => {
                 build_project(&project, extra);
+            }
+            Commands::Run { emulator, rom } => {
+                run_emulator(emulator.as_deref(), &rom);
             }
             Commands::Uninstall { config_only } => {
                 uninstall_sgdk(config_only);
@@ -136,6 +168,28 @@ fn create_localized_cli() -> Cli {
                 ),
         )
         .subcommand(
+            Command::new("setup-emu")
+                .about(if is_japanese {
+                    "ROMファイル実行用のエミュレータをセットアップ"
+                } else {
+                    "Setup emulator for running ROM files"
+                })
+                .arg(
+                    clap::Arg::new("emulator")
+                        .default_value("gens")
+                        .help(if is_japanese {
+                            "セットアップするエミュレータ (gens または blastem)"
+                        } else {
+                            "Emulator to setup (gens or blastem)"
+                        }),
+                )
+                .arg(clap::Arg::new("dir").long("dir").help(if is_japanese {
+                    "エミュレータをインストールするディレクトリ（省略時は設定ディレクトリ）"
+                } else {
+                    "Directory to install emulator (defaults to config directory)"
+                })),
+        )
+        .subcommand(
             Command::new("new")
                 .about(if is_japanese {
                     "SGDKテンプレートから新しいプロジェクトを作成"
@@ -173,6 +227,29 @@ fn create_localized_cli() -> Cli {
                             "makeに渡す追加オプション"
                         } else {
                             "Additional options to pass to make"
+                        }),
+                ),
+        )
+        .subcommand(
+            Command::new("run")
+                .about(if is_japanese {
+                    "エミュレータでROMファイルを実行"
+                } else {
+                    "Run ROM file with emulator"
+                })
+                .arg(clap::Arg::new("emulator").help(if is_japanese {
+                    "使用するエミュレータ (gens または blastem、省略時は利用可能なエミュレータ)"
+                } else {
+                    "Emulator to use (gens or blastem, defaults to available emulator)"
+                }))
+                .arg(
+                    clap::Arg::new("rom")
+                        .long("rom")
+                        .default_value("out/rom.bin")
+                        .help(if is_japanese {
+                            "ROMファイルのパス（省略時は out/rom.bin）"
+                        } else {
+                            "ROM file path (defaults to out/rom.bin)"
                         }),
                 ),
         )
@@ -218,6 +295,18 @@ fn create_localized_cli() -> Cli {
                     .unwrap_or_default()
                     .map(|s| s.clone())
                     .collect(),
+            }),
+        },
+        Some(("setup-emu", sub_matches)) => Cli {
+            command: Some(Commands::SetupEmu {
+                emulator: sub_matches.get_one::<String>("emulator").unwrap().clone(),
+                dir: sub_matches.get_one::<String>("dir").cloned(),
+            }),
+        },
+        Some(("run", sub_matches)) => Cli {
+            command: Some(Commands::Run {
+                emulator: sub_matches.get_one::<String>("emulator").cloned(),
+                rom: sub_matches.get_one::<String>("rom").unwrap().clone(),
             }),
         },
         Some(("uninstall", sub_matches)) => Cli {
@@ -528,6 +617,45 @@ fn run_doctor_and_info() {
             .and_then(|out| String::from_utf8(out.stdout).ok())
             .unwrap_or("Unknown".to_string());
         println!("{}", rust_i18n::t!("commit_id", commit = commit.trim()));
+
+        // === Gens/Blastem Path Info 追加 ===
+        let config_base = config_dir().unwrap().join("sgdktool");
+
+        // Gens
+        let gens_path_config = doc
+            .get("emulator")
+            .and_then(|e| e.get("gens_path"))
+            .and_then(|v| v.as_str());
+        if let Some(path) = gens_path_config {
+            println!("{}", rust_i18n::t!("gens_path", path = path));
+        } else {
+            let gens_path_opt = find_emulator_executable(&config_base, "gens");
+            if let Some(gens_exe) = gens_path_opt {
+                println!("{}", rust_i18n::t!("gens_path", path = gens_exe.display()));
+            } else {
+                println!("{}", rust_i18n::t!("gens_not_installed"));
+            }
+        }
+
+        // Blastem
+        let blastem_path_config = doc
+            .get("emulator")
+            .and_then(|e| e.get("blastem_path"))
+            .and_then(|v| v.as_str());
+        if let Some(path) = blastem_path_config {
+            println!("{}", rust_i18n::t!("blastem_path", path = path));
+        } else {
+            let blastem_path_opt = find_emulator_executable(&config_base, "blastem");
+            if let Some(blastem_exe) = blastem_path_opt {
+                println!(
+                    "{}",
+                    rust_i18n::t!("blastem_path", path = blastem_exe.display())
+                );
+            } else {
+                println!("{}", rust_i18n::t!("blastem_not_installed"));
+            }
+        }
+        // === ここまで追加 ===
     } else {
         println!("{}", rust_i18n::t!("config_not_found"));
     }
@@ -764,7 +892,7 @@ fn uninstall_sgdk(config_only: bool) {
             // 設定からSGDKパスを取得
             let text = fs::read_to_string(&config_path).ok();
             if let Some(text) = text {
-                if let Ok(doc) = text.parse::<Document>() {
+                if let Ok(mut doc) = text.parse::<Document>() {
                     if let Some(sgdk_path) = doc["sgdk"]["path"].as_str() {
                         let sgdk_dir = Path::new(sgdk_path);
                         if sgdk_dir.exists() {
@@ -778,6 +906,39 @@ fn uninstall_sgdk(config_only: bool) {
                             fs::remove_dir_all(sgdk_dir).expect("Failed to remove SGDK directory");
                         }
                     }
+                    // === ここから追加: エミュレータ(gens/blastem)も削除 ===
+                    // config.tomlのパスを参照してgens/blastemディレクトリを削除
+                    if let Some(gens_path) = doc
+                        .get("emulator")
+                        .and_then(|e| e.get("gens_path"))
+                        .and_then(|v| v.as_str())
+                    {
+                        let gens_dir = std::path::Path::new(gens_path)
+                            .parent()
+                            .unwrap_or(std::path::Path::new(gens_path));
+                        if gens_dir.exists() {
+                            println!("Removing gens emulator: {}", gens_dir.display());
+                            fs::remove_dir_all(gens_dir).expect("Failed to remove gens directory");
+                        }
+                    }
+                    if let Some(blastem_path) = doc
+                        .get("emulator")
+                        .and_then(|e| e.get("blastem_path"))
+                        .and_then(|v| v.as_str())
+                    {
+                        let blastem_dir = std::path::Path::new(blastem_path)
+                            .parent()
+                            .unwrap_or(std::path::Path::new(blastem_path));
+                        if blastem_dir.exists() {
+                            println!("Removing blastem emulator: {}", blastem_dir.display());
+                            fs::remove_dir_all(blastem_dir)
+                                .expect("Failed to remove blastem directory");
+                        }
+                    }
+                    // config.tomlの[emulator]セクション削除
+                    doc.remove("emulator");
+                    fs::write(&config_path, doc.to_string()).expect("Failed to update config.toml");
+                    // === ここまで追加 ===
                 }
             }
         }
@@ -789,6 +950,264 @@ fn uninstall_sgdk(config_only: bool) {
         } else {
             println!("{}", rust_i18n::t!("nothing_to_remove"));
         }
+    }
+}
+
+fn setup_emulator(emulator: &str, dir: Option<&str>) {
+    let config_dir = config_dir()
+        .expect("Unable to determine config directory")
+        .join("sgdktool");
+
+    let install_dir = if let Some(dir) = dir {
+        PathBuf::from(dir)
+    } else {
+        config_dir.join(emulator)
+    };
+
+    if !install_dir.exists() {
+        fs::create_dir_all(&install_dir).expect("Failed to create install directory");
+    }
+
+    // インストール処理
+    match emulator {
+        "gens" => setup_gens(&install_dir),
+        "blastem" => setup_blastem(&install_dir),
+        _ => {
+            eprintln!(
+                "Unsupported emulator: {}. Supported emulators: gens, blastem",
+                emulator
+            );
+            std::process::exit(1);
+        }
+    }
+
+    // 実行ファイルパスを探索してconfig.tomlに保存
+    let exe_path = find_emulator_executable(&config_dir, emulator);
+    if let Some(exe_path) = exe_path {
+        let config_path = config_dir.join("config.toml");
+        let mut doc = if config_path.exists() {
+            fs::read_to_string(&config_path)
+                .unwrap()
+                .parse::<Document>()
+                .unwrap()
+        } else {
+            Document::new()
+        };
+        doc["emulator"][format!("{}_path", emulator)] =
+            value(exe_path.to_string_lossy().to_string());
+        fs::write(&config_path, doc.to_string()).expect("Failed to write config.toml");
+        println!("{} path saved to config.toml", emulator);
+    }
+}
+
+fn setup_gens(install_dir: &Path) {
+    println!("Setting up Gens KMod v0.7.3...");
+
+    let url = "https://retrocdn.net/images/4/43/Gens_KMod_v0.7.3.7z";
+
+    // Download the 7z file
+    let response = get(url).expect("Failed to download Gens");
+    let temp_file = NamedTempFile::new().expect("Failed to create temp file");
+    let temp_path = temp_file.path().to_path_buf();
+
+    // Write response to file
+    let mut content = std::io::Cursor::new(response.bytes().expect("Failed to read response"));
+    let mut file = fs::File::create(&temp_path).expect("Failed to create file");
+    io_copy(&mut content, &mut file).expect("Failed to write to file");
+
+    // Create the target directory if it doesn't exist
+    if !install_dir.exists() {
+        fs::create_dir_all(install_dir).expect("Failed to create install directory");
+    }
+
+    // Extract the 7z file
+    println!("Extracting Gens KMod...");
+    match sevenz_rust::decompress_file(&temp_path, install_dir) {
+        Ok(_) => println!("Gens KMod v0.7.3 installed to {}", install_dir.display()),
+        Err(e) => {
+            eprintln!("Failed to extract Gens KMod: {}", e);
+            std::process::exit(1);
+        }
+    }
+}
+
+fn setup_blastem(install_dir: &Path) {
+    println!("Setting up BlastEm nightly build...");
+
+    // Fetch the nightlies directory to find the latest build
+    let base_url = "https://www.retrodev.com/blastem/nightlies/";
+    let response = get(base_url).expect("Failed to connect to BlastEm nightlies page");
+    let content = response.text().expect("Failed to read nightlies page");
+
+    // Find the latest win64 nightly build
+    // Look for links like "blastem-win64-0.6.3-pre-b42f00a3a937.zip"
+    let re = regex::Regex::new(r"blastem-win64-[0-9\.]+.*?\.zip").unwrap();
+
+    let latest_build = re
+        .find_iter(&content)
+        .next()
+        .expect("Failed to find a win64 nightly build")
+        .as_str();
+
+    let url = format!("{}{}", base_url, latest_build);
+    println!("Found latest build: {}", latest_build);
+
+    // Download the zip file
+    let response = get(&url).expect("Failed to download BlastEm");
+    let mut temp_file = NamedTempFile::new().expect("Failed to create temp file");
+
+    let mut content = std::io::Cursor::new(response.bytes().expect("Failed to read response"));
+    io_copy(&mut content, &mut temp_file).expect("Failed to write to temp file");
+
+    // Extract the zip file
+    let file = fs::File::open(temp_file.path()).expect("Failed to open temp file");
+    let mut archive = ZipArchive::new(file).expect("Failed to read zip archive");
+
+    // Create the target directory if it doesn't exist
+    if !install_dir.exists() {
+        fs::create_dir_all(install_dir).expect("Failed to create install directory");
+    }
+
+    for i in 0..archive.len() {
+        let mut file = archive
+            .by_index(i)
+            .expect("Failed to read file from archive");
+        let outpath = install_dir.join(file.mangled_name());
+
+        if file.name().ends_with('/') {
+            fs::create_dir_all(&outpath).expect("Failed to create directory");
+        } else {
+            if let Some(p) = outpath.parent() {
+                if !p.exists() {
+                    fs::create_dir_all(p).expect("Failed to create parent directory");
+                }
+            }
+            let mut outfile = fs::File::create(&outpath).expect("Failed to create output file");
+            io_copy(&mut file, &mut outfile).expect("Failed to extract file");
+        }
+    }
+
+    println!(
+        "BlastEm nightly build installed to {}",
+        install_dir.display()
+    );
+}
+
+fn run_emulator(emulator: Option<&str>, rom_path: &str) {
+    let config_dir = config_dir()
+        .expect("Unable to determine config directory")
+        .join("sgdktool");
+
+    // Check if ROM file exists
+    if !Path::new(rom_path).exists() {
+        eprintln!("ROM file not found: {}", rom_path);
+        std::process::exit(1);
+    }
+
+    let emulator_to_use = if let Some(emu) = emulator {
+        emu.to_string()
+    } else {
+        // Auto-detect available emulator
+        if find_emulator_executable(&config_dir, "gens").is_some() {
+            "gens".to_string()
+        } else if find_emulator_executable(&config_dir, "blastem").is_some() {
+            "blastem".to_string()
+        } else {
+            eprintln!("No emulator found. Please run 'sgdktool setup-emu' first.");
+            std::process::exit(1);
+        }
+    };
+
+    let emulator_path = find_emulator_executable(&config_dir, &emulator_to_use);
+
+    if let Some(exe_path) = emulator_path {
+        run_with_wine(&exe_path, rom_path);
+    } else {
+        eprintln!(
+            "Emulator '{}' not found. Please run 'sgdktool setup-emu {}' first.",
+            emulator_to_use, emulator_to_use
+        );
+        std::process::exit(1);
+    }
+}
+
+fn find_emulator_executable(config_dir: &Path, emulator: &str) -> Option<PathBuf> {
+    let emulator_dir = config_dir.join(emulator);
+
+    match emulator {
+        "gens" => {
+            // Look for gens.exe in various possible locations
+            let possible_paths = vec![
+                emulator_dir.join("gens.exe"),
+                emulator_dir.join("Gens_KMod_v0.7.3").join("gens.exe"),
+            ];
+
+            for path in possible_paths {
+                if path.exists() {
+                    return Some(path);
+                }
+            }
+        }
+        "blastem" => {
+            // Look for blastem.exe in various possible locations
+            let possible_paths = vec![emulator_dir.join("blastem.exe")];
+
+            // Also look for blastem-win64-* directories
+            if let Ok(entries) = fs::read_dir(&emulator_dir) {
+                for entry in entries {
+                    if let Ok(entry) = entry {
+                        let path = entry.path();
+                        if path.is_dir()
+                            && path
+                                .file_name()
+                                .unwrap()
+                                .to_str()
+                                .unwrap()
+                                .starts_with("blastem-win64")
+                        {
+                            let exe_path = path.join("blastem.exe");
+                            if exe_path.exists() {
+                                return Some(exe_path);
+                            }
+                        }
+                    }
+                }
+            }
+
+            for path in possible_paths {
+                if path.exists() {
+                    return Some(path);
+                }
+            }
+        }
+        _ => {}
+    }
+
+    None
+}
+
+fn run_with_wine(exe_path: &Path, rom_path: &str) {
+    // Check if wine is available
+    if which("wine").is_err() {
+        eprintln!(
+            "Wine is not installed or not in PATH. Please install wine to run Windows emulators."
+        );
+        std::process::exit(1);
+    }
+
+    println!("Running {} with wine...", exe_path.display());
+
+    let absolute_rom_path =
+        fs::canonicalize(rom_path).expect("Failed to get absolute path for ROM file");
+
+    let status = Command::new("wine")
+        .arg(exe_path)
+        .arg(&absolute_rom_path)
+        .status()
+        .expect("Failed to run emulator with wine");
+
+    if !status.success() {
+        eprintln!("Emulator exited with error code: {:?}", status.code());
     }
 }
 
