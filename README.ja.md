@@ -75,7 +75,7 @@ Options:
 ✅ wine: /opt/homebrew/bin/wine
 
 📝 SGDK 設定情報:
-SGDK パス   : /Users/kbt/Library/Application Support/sgdktool/SGDK
+SGDK パス   : /Users/[name]/Library/Application Support/sgdktool/SGDK
 ブランチ     : master
 コミット ID : 60c99ea912387d6f5f014673d9760ef8a79e1339
 ```
