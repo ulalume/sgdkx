@@ -2,7 +2,6 @@ use std::path::{Path, PathBuf};
 use std::fs;
 use std::process::Command;
 use dirs::config_dir;
-use rust_i18n;
 use which::which;
 
 pub fn run_emulator(emulator: Option<&str>, rom_path: &str) {

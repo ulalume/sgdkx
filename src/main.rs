@@ -1,17 +1,9 @@
 use clap::{Parser, Subcommand};
 use dirs::config_dir;
-use fs_extra::dir::{CopyOptions, copy};
-use reqwest::blocking::get;
-use sevenz_rust;
 use std::fs;
-use std::io::copy as io_copy;
-use std::os::unix::fs::symlink;
 use std::path::{Path, PathBuf};
 use std::process::Command;
-use tempfile::NamedTempFile;
-use toml_edit::{Document, value};
-use which::which;
-use zip::ZipArchive;
+use toml_edit::Document;
 
 mod commands;
 

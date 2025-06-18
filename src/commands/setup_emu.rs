@@ -2,7 +2,6 @@ use std::path::{Path, PathBuf};
 use std::fs;
 use dirs::config_dir;
 use toml_edit::{Document, value};
-use rust_i18n;
 use reqwest::blocking::get;
 use tempfile::NamedTempFile;
 use std::io::copy as io_copy;
