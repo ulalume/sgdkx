@@ -6,8 +6,8 @@ use dirs::config_dir;
 use toml_edit::Document;
 use rust_i18n;
 
-pub fn build_project(project: &str, extra: Vec<String>) {
-    let dir = Path::new(project);
+pub fn build_project(extra: &Vec<String>) {
+    let dir = Path::new(".");
     if !dir.exists() {
         eprintln!("{}", rust_i18n::t!("project_dir_not_found"));
         std::process::exit(1);

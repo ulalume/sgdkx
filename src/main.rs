@@ -56,10 +56,6 @@ enum Commands {
 
     /// Build project using make
     Make {
-        /// Project directory (defaults to current directory)
-        #[arg(long, default_value = ".")]
-        project: String,
-
         /// Additional options to pass to make
         #[arg(last = true)]
         extra: Vec<String>,
@@ -101,8 +97,8 @@ fn main() {
             Commands::New { name } => {
                 create_project(&name);
             }
-            Commands::Make { project, extra } => {
-                build_project(&project, extra);
+            Commands::Make { extra } => {
+                build_project(&extra);
             }
             Commands::Run { emulator, rom } => {
                 run_emulator(emulator.as_deref(), &rom);
@@ -211,16 +207,6 @@ fn create_localized_cli() -> Cli {
                     "Build project using make"
                 })
                 .arg(
-                    clap::Arg::new("project")
-                        .long("project")
-                        .default_value(".")
-                        .help(if is_japanese {
-                            "プロジェクトディレクトリ（省略時はカレントディレクトリ）"
-                        } else {
-                            "Project directory (defaults to current directory)"
-                        }),
-                )
-                .arg(
                     clap::Arg::new("extra")
                         .trailing_var_arg(true)
                         .num_args(0..)
@@ -242,17 +228,7 @@ fn create_localized_cli() -> Cli {
                     "使用するエミュレータ (gens または blastem、省略時は利用可能なエミュレータ)"
                 } else {
                     "Emulator to use (gens or blastem, defaults to available emulator)"
-                }))
-                .arg(
-                    clap::Arg::new("rom")
-                        .long("rom")
-                        .default_value("out/rom.bin")
-                        .help(if is_japanese {
-                            "ROMファイルのパス（省略時は out/rom.bin）"
-                        } else {
-                            "ROM file path (defaults to out/rom.bin)"
-                        }),
-                ),
+                })),
         )
         .subcommand(
             Command::new("uninstall")
@@ -290,7 +266,6 @@ fn create_localized_cli() -> Cli {
         },
         Some(("make", sub_matches)) => Cli {
             command: Some(Commands::Make {
-                project: sub_matches.get_one::<String>("project").unwrap().clone(),
                 extra: sub_matches
                     .get_many::<String>("extra")
                     .unwrap_or_default()
