@@ -3,7 +3,7 @@ use std::fs;
 use std::process::Command;
 use std::os::unix::fs::symlink;
 use dirs::config_dir;
-use toml_edit::Document;
+use toml_edit::DocumentMut;
 use rust_i18n;
 
 pub fn build_project(extra: &Vec<String>) {
@@ -16,7 +16,7 @@ pub fn build_project(extra: &Vec<String>) {
     let config_path = config_dir().unwrap().join("sgdktool/config.toml");
     let doc = fs::read_to_string(&config_path)
         .unwrap()
-        .parse::<Document>()
+        .parse::<DocumentMut>()
         .unwrap();
     let sgdk_path = Path::new(doc["sgdk"]["path"].as_str().unwrap());
 

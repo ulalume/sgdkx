@@ -1,7 +1,7 @@
 use std::path::{Path, PathBuf};
 use std::fs;
 use dirs::config_dir;
-use toml_edit::{Document, value};
+use toml_edit::{DocumentMut, value};
 use reqwest::blocking::get;
 use tempfile::NamedTempFile;
 use std::io::copy as io_copy;
@@ -43,10 +43,10 @@ pub fn setup_emulator(emulator: &str, dir: Option<&str>) {
         let mut doc = if config_path.exists() {
             fs::read_to_string(&config_path)
                 .unwrap()
-                .parse::<Document>()
+                .parse::<DocumentMut>()
                 .unwrap()
         } else {
-            Document::new()
+            DocumentMut::new()
         };
         doc["emulator"][format!("{}_path", emulator)] =
             value(exe_path.to_string_lossy().to_string());

@@ -1,7 +1,7 @@
 use std::path::Path;
 use std::fs;
 use dirs::config_dir;
-use toml_edit::Document;
+use toml_edit::DocumentMut;
 use rust_i18n;
 
 pub fn uninstall_sgdk(config_only: bool) {
@@ -56,7 +56,7 @@ pub fn uninstall_sgdk(config_only: bool) {
             // 設定からSGDKパスを取得
             let text = fs::read_to_string(&config_path).ok();
             if let Some(text) = text {
-                if let Ok(mut doc) = text.parse::<Document>() {
+                if let Ok(mut doc) = text.parse::<DocumentMut>() {
                     if let Some(sgdk_path) = doc["sgdk"]["path"].as_str() {
                         let sgdk_dir = Path::new(sgdk_path);
                         if sgdk_dir.exists() {

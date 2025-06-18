@@ -2,7 +2,7 @@ use std::path::{Path, PathBuf};
 use std::fs;
 use std::process::Command;
 use dirs::config_dir;
-use toml_edit::{Document, value};
+use toml_edit::{DocumentMut, value};
 use which::which;
 
 // 多言語化
@@ -61,10 +61,10 @@ pub fn setup_sgdk(dir: Option<&str>, branch: &str) {
         let mut doc = if config_path.exists() {
             let text =
                 fs::read_to_string(&config_path).expect(&rust_i18n::t!("config_read_failed"));
-            text.parse::<Document>()
+            text.parse::<DocumentMut>()
                 .expect(&rust_i18n::t!("toml_parse_failed"))
         } else {
-            Document::new()
+            DocumentMut::new()
         };
         let abs_path = target_dir
             .canonicalize()
@@ -107,10 +107,10 @@ pub fn setup_sgdk(dir: Option<&str>, branch: &str) {
 
     let mut doc = if config_path.exists() {
         let text = fs::read_to_string(&config_path).expect(&rust_i18n::t!("config_read_failed"));
-        text.parse::<Document>()
+        text.parse::<DocumentMut>()
             .expect(&rust_i18n::t!("toml_parse_failed"))
     } else {
-        Document::new()
+        DocumentMut::new()
     };
     let abs_path = target_dir
         .canonicalize()

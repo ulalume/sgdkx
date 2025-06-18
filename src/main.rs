@@ -3,7 +3,7 @@ use dirs::config_dir;
 use std::fs;
 use std::path::{Path, PathBuf};
 use std::process::Command;
-use toml_edit::Document;
+use toml_edit::DocumentMut;
 
 mod commands;
 
@@ -312,7 +312,7 @@ fn run_doctor_and_info() {
 
     if config_path.exists() {
         let text = fs::read_to_string(&config_path).unwrap();
-        let doc = text.parse::<Document>().unwrap();
+        let doc = text.parse::<DocumentMut>().unwrap();
         let path = doc["sgdk"]["path"].as_str().unwrap_or("Unknown");
         let branch = doc["sgdk"]["branch"].as_str().unwrap_or("Unknown");
 

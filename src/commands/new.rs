@@ -1,7 +1,7 @@
 use std::path::Path;
 use std::fs;
 use dirs::config_dir;
-use toml_edit::Document;
+use toml_edit::DocumentMut;
 use rust_i18n;
 
 pub fn create_project(name: &str) {
@@ -15,7 +15,7 @@ pub fn create_project(name: &str) {
 
     let text = fs::read_to_string(&config_path).expect(&rust_i18n::t!("config_read_failed"));
     let doc = text
-        .parse::<Document>()
+        .parse::<DocumentMut>()
         .expect(&rust_i18n::t!("toml_parse_failed"));
     let sgdk_path = Path::new(doc["sgdk"]["path"].as_str().unwrap());
 
