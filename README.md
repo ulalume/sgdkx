@@ -1,13 +1,10 @@
-sgdktool/README.md
 # SGDKTool
 
-> **This tool is under active development. There is a significant lack of tests. Use at your own risk!**
+🇯🇵 日本語版READMEは[こちら](./README.ja.md)をご覧ください。
+
+**This tool is under active development. There is a significant lack of tests. Use at your own risk!**
 
 SGDKTool is a CLI tool to support development with SGDK (Sega Genesis Development Kit).
-
----
-
-## 🇯🇵 日本語版READMEは[こちら](./README.ja.md)をご覧ください。
 
 ---
 
