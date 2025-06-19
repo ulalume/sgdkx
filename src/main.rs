@@ -33,9 +33,9 @@ enum Commands {
         #[arg(long)]
         dir: Option<String>,
 
-        /// Branch name to clone
+        /// Branch, tag, or commit ID to clone (defaults to master)
         #[arg(long, default_value = "master")]
-        branch: String,
+        version: String,
     },
 
     /// Setup emulator for running ROM files
@@ -64,6 +64,7 @@ enum Commands {
     /// Run ROM file with emulator
     Run {
         /// Emulator to use (gens or blastem, defaults to available emulator)
+        #[arg(long)]
         emulator: Option<String>,
 
         /// ROM file path (defaults to out/rom.bin)
@@ -88,8 +89,8 @@ fn main() {
 
     match cli.command {
         Some(cmd) => match cmd {
-            Commands::Setup { dir, branch } => {
-                setup_sgdk(dir.as_deref(), &branch);
+            Commands::Setup { dir, version } => {
+                setup_sgdk(dir.as_deref(), &version);
             }
             Commands::SetupEmu { emulator, dir } => {
                 setup_emulator(&emulator, dir.as_deref());
@@ -154,13 +155,13 @@ fn create_localized_cli() -> Cli {
                     "Directory to clone SGDK into (defaults to config directory)"
                 }))
                 .arg(
-                    clap::Arg::new("branch")
-                        .long("branch")
+                    clap::Arg::new("version")
+                        .long("version")
                         .default_value("master")
                         .help(if is_japanese {
-                            "クローンするブランチ名"
+                            "クローンするブランチ名・タグ・コミットID（省略時はmaster）"
                         } else {
-                            "Branch name to clone"
+                            "Branch, tag, or commit ID to clone (defaults to master)"
                         }),
                 ),
         )
@@ -224,11 +225,25 @@ fn create_localized_cli() -> Cli {
                 } else {
                     "Run ROM file with emulator"
                 })
-                .arg(clap::Arg::new("emulator").help(if is_japanese {
-                    "使用するエミュレータ (gens または blastem、省略時は利用可能なエミュレータ)"
-                } else {
-                    "Emulator to use (gens or blastem, defaults to available emulator)"
-                })),
+                .arg(
+                    clap::Arg::new("emulator")
+                        .long("emulator")
+                        .help(if is_japanese {
+                            "使用するエミュレータ (gens または blastem、省略時は利用可能なエミュレータ)"
+                        } else {
+                            "Emulator to use (gens or blastem, defaults to available emulator)"
+                        }),
+                )
+                .arg(
+                    clap::Arg::new("rom")
+                        .long("rom")
+                        .default_value("out/rom.bin")
+                        .help(if is_japanese {
+                            "ROMファイルのパス（省略時は out/rom.bin）"
+                        } else {
+                            "ROM file path (defaults to out/rom.bin)"
+                        }),
+                ),
         )
         .subcommand(
             Command::new("uninstall")
@@ -256,7 +271,7 @@ fn create_localized_cli() -> Cli {
         Some(("setup", sub_matches)) => Cli {
             command: Some(Commands::Setup {
                 dir: sub_matches.get_one::<String>("dir").cloned(),
-                branch: sub_matches.get_one::<String>("branch").unwrap().clone(),
+                version: sub_matches.get_one::<String>("version").unwrap().clone(),
             }),
         },
         Some(("new", sub_matches)) => Cli {

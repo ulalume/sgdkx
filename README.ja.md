@@ -38,10 +38,14 @@ brew install --cask --no-quarantine wine-crossover
   環境チェック・SGDKやエミュレータの設定状況・ヘルプを表示します。  
   サブコマンドを指定しない場合、現在のSGDK/エミュレータのセットアップ状況を確認できます。
 
-- `sgdktool setup [--dir パス] [--branch ブランチ名]`  
+- `sgdktool setup [--dir パス] [--version バージョン]`  
   SGDK（Sega Genesis Development Kit）をダウンロード・インストールします。  
-  `--dir` でインストール先ディレクトリ（省略時は設定ディレクトリ）、`--branch` でブランチ（省略時はmaster）を指定できます。  
-  SGDKのパスやブランチはconfig.tomlに保存されます。
+  `--dir` でインストール先ディレクトリ（省略時は設定ディレクトリ）、`--version` でブランチ名・タグ名・コミットID（省略時はmaster）を指定できます。  
+  例:  
+    - `--version develop` で developブランチ  
+    - `--version V2.11` でタグ V2.11  
+    - `--version ef9292c0` でコミットID ef9292c0  
+  SGDKのパスやバージョンはconfig.tomlに保存されます。
 
 - `sgdktool setup-emu [gens|blastem] [--dir パス]`  
   エミュレータ（gens または blastem）をダウンロード・セットアップします。  
@@ -56,9 +60,9 @@ brew install --cask --no-quarantine wine-crossover
   `make` を使ってSGDKプロジェクトをビルドします。  
   `--project` でプロジェクトディレクトリ（省略時はカレントディレクトリ）、追加オプションでmakeに渡す引数を指定できます。
 
-- `sgdktool run [gens|blastem] [--rom パス]`  
+- `sgdktool run [--emulator gens|blastem] [--rom パス]`  
   エミュレータでROMファイルを実行します。  
-  エミュレータやROMファイルのパスを指定できます（省略時は自動検出/`out/rom.bin`）。  
+  `--emulator` でエミュレータ（gens または blastem）、`--rom` でROMファイルのパスを指定できます（どちらも省略可能、デフォルトは自動検出/`out/rom.bin`）。  
   エミュレータが未インストールの場合はsetup-emuの実行を促すメッセージが表示されます。
 
 - `sgdktool uninstall [--config-only]`  
@@ -106,7 +110,7 @@ Options:
 
 📝 SGDK 設定情報:
 SGDK パス   : /Users/[user]/Library/Application Support/sgdktool/SGDK
-ブランチ     : master
+バージョン  : master
 コミット ID : 60c99ea912387d6f5f014673d9760ef8a79e1339
 Gens パス   : /Users/[user]/Library/Application Support/sgdktool/gens/gens.exe
 blastem パス: /Users/[user]/Library/Application Support/sgdktool/blastem/blastem-win64-0.6.3-pre-b42f00a3a937/blastem.exe
