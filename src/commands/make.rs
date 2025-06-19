@@ -1,10 +1,10 @@
-use std::path::Path;
-use std::fs;
-use std::process::Command;
-use std::os::unix::fs::symlink;
 use dirs::config_dir;
-use toml_edit::DocumentMut;
 use rust_i18n;
+use std::fs;
+use std::os::unix::fs::symlink;
+use std::path::Path;
+use std::process::Command;
+use toml_edit::DocumentMut;
 
 pub fn build_project(extra: &Vec<String>) {
     let dir = Path::new(".");
@@ -43,11 +43,10 @@ pub fn build_project(extra: &Vec<String>) {
         (sgdk_path.to_path_buf(), false)
     };
 
-    let makefile = if cfg!(target_os = "windows") {
-        effective_sgdk_path.join("makefile.gen")
-    } else {
-        effective_sgdk_path.join("makefile_wine.gen")
-    };
+    #[cfg(target_os = "windows")]
+    let makefile = effective_sgdk_path.join("makefile.gen");
+    #[cfg(not(target_os = "windows"))]
+    let makefile = effective_sgdk_path.join("makefile_wine.gen");
 
     let sgdk_path_str = effective_sgdk_path.to_str().unwrap();
 
@@ -69,4 +68,4 @@ pub fn build_project(extra: &Vec<String>) {
     }
 
     std::process::exit(status.code().unwrap_or(1));
-} 
+}

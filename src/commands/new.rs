@@ -1,8 +1,8 @@
-use std::path::Path;
-use std::fs;
 use dirs::config_dir;
-use toml_edit::DocumentMut;
 use rust_i18n;
+use std::fs;
+use std::path::Path;
+use toml_edit::DocumentMut;
 
 pub fn create_project(name: &str) {
     let config_path = config_dir().unwrap().join("sgdktool/config.toml");
@@ -90,11 +90,10 @@ pub fn run_compiledb_make(project_path: &Path, sgdk_path: &Path) -> bool {
         (sgdk_path.to_path_buf(), false)
     };
 
-    let makefile = if cfg!(target_os = "windows") {
-        effective_sgdk_path.join("makefile.gen")
-    } else {
-        effective_sgdk_path.join("makefile_wine.gen")
-    };
+    #[cfg(target_os = "windows")]
+    let makefile = effective_sgdk_path.join("makefile.gen");
+    #[cfg(not(target_os = "windows"))]
+    let makefile = effective_sgdk_path.join("makefile_wine.gen");
 
     let sgdk_path_str = effective_sgdk_path.to_str().unwrap();
 
@@ -218,4 +217,4 @@ pub fn create_gitignore(project_path: &Path) {
     let gitignore_path = project_path.join(".gitignore");
     fs::write(gitignore_path, gitignore_content).expect("Failed to create .gitignore file");
     println!("{}", rust_i18n::t!("gitignore_created"));
-} 
+}

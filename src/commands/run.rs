@@ -1,7 +1,7 @@
-use std::path::{Path, PathBuf};
-use std::fs;
-use std::process::Command;
 use dirs::config_dir;
+use std::fs;
+use std::path::{Path, PathBuf};
+use std::process::Command;
 use which::which;
 
 pub fn run_emulator(emulator: Option<&str>, rom_path: &str) {
@@ -32,7 +32,14 @@ pub fn run_emulator(emulator: Option<&str>, rom_path: &str) {
     let emulator_path = find_emulator_executable(&config_dir, &emulator_to_use);
 
     if let Some(exe_path) = emulator_path {
-        run_with_wine(&exe_path, rom_path);
+        #[cfg(target_os = "windows")]
+        {
+            run_direct(&exe_path, rom_path);
+        }
+        #[cfg(not(target_os = "windows"))]
+        {
+            run_with_wine(&exe_path, rom_path);
+        }
     } else {
         eprintln!(
             "Emulator '{}' not found. Please run 'sgdktool setup-emu {}' first.",
@@ -97,6 +104,7 @@ pub fn find_emulator_executable(config_dir: &Path, emulator: &str) -> Option<Pat
     None
 }
 
+#[cfg(not(target_os = "windows"))]
 pub fn run_with_wine(exe_path: &Path, rom_path: &str) {
     // Check if wine is available
     if which("wine").is_err() {
@@ -120,4 +128,21 @@ pub fn run_with_wine(exe_path: &Path, rom_path: &str) {
     if !status.success() {
         eprintln!("Emulator exited with error code: {:?}", status.code());
     }
-} 
+}
+
+#[cfg(target_os = "windows")]
+pub fn run_direct(exe_path: &Path, rom_path: &str) {
+    println!("Running {} ...", exe_path.display());
+
+    let absolute_rom_path =
+        fs::canonicalize(rom_path).expect("Failed to get absolute path for ROM file");
+
+    let status = Command::new(exe_path)
+        .arg(&absolute_rom_path)
+        .status()
+        .expect("Failed to run emulator");
+
+    if !status.success() {
+        eprintln!("Emulator exited with error code: {:?}", status.code());
+    }
+}

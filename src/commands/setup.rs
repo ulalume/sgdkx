@@ -1,7 +1,7 @@
-use std::path::{Path, PathBuf};
-use std::fs;
-use std::process::Command;
 use dirs::config_dir;
+use std::fs;
+use std::path::{Path, PathBuf};
+use std::process::Command;
 use toml_edit::{DocumentMut, value};
 use which::which;
 
@@ -120,7 +120,8 @@ pub fn setup_sgdk(dir: Option<&str>, branch: &str) {
 
     fs::write(&config_path, doc.to_string()).expect("Failed to write config.toml");
 
-    if !cfg!(target_os = "windows") {
+    #[cfg(not(target_os = "windows"))]
+    {
         run_generate_wine(&target_dir);
     }
 
@@ -128,8 +129,9 @@ pub fn setup_sgdk(dir: Option<&str>, branch: &str) {
         "{}",
         rust_i18n::t!("sgdk_setup_complete", path = target_dir.display())
     );
-} 
+}
 
+#[cfg(not(target_os = "windows"))]
 fn run_generate_wine(sgdk_path: &Path) {
     let sgdk_bin = sgdk_path.join("bin");
     let script_url =

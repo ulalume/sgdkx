@@ -7,12 +7,12 @@ use toml_edit::DocumentMut;
 
 mod commands;
 
-use commands::setup::setup_sgdk;
-use commands::new::create_project;
 use commands::make::build_project;
+use commands::new::create_project;
 use commands::run::run_emulator;
-use commands::uninstall::uninstall_sgdk;
+use commands::setup::setup_sgdk;
 use commands::setup_emu::setup_emulator;
+use commands::uninstall::uninstall_sgdk;
 
 // 多言語化の初期化
 rust_i18n::i18n!("locales");
@@ -303,7 +303,7 @@ fn run_doctor_and_info() {
         check_tool(tool);
     }
 
-    #[cfg(any(target_os = "macos", target_os = "linux"))]
+    #[cfg(not(target_os = "windows"))]
     check_tool("wine");
 
     let config_path = config_dir().unwrap().join("sgdktool").join("config.toml");
