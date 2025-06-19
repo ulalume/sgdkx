@@ -73,11 +73,7 @@ enum Commands {
     },
 
     /// Uninstall SGDK installation and configuration
-    Uninstall {
-        /// Remove only configuration (keep SGDK installation)
-        #[arg(long)]
-        config_only: bool,
-    },
+    Uninstall,
 }
 
 fn main() {
@@ -104,8 +100,8 @@ fn main() {
             Commands::Run { emulator, rom } => {
                 run_emulator(emulator.as_deref(), &rom);
             }
-            Commands::Uninstall { config_only } => {
-                uninstall_sgdk(config_only);
+            Commands::Uninstall => {
+                uninstall_sgdk();
             }
         },
         None => {
@@ -300,10 +296,8 @@ fn create_localized_cli() -> Cli {
                 rom: sub_matches.get_one::<String>("rom").unwrap().clone(),
             }),
         },
-        Some(("uninstall", sub_matches)) => Cli {
-            command: Some(Commands::Uninstall {
-                config_only: sub_matches.get_flag("config-only"),
-            }),
+        Some(("uninstall", _sub_matches)) => Cli {
+            command: Some(Commands::Uninstall),
         },
         _ => Cli { command: None },
     }

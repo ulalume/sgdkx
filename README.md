@@ -64,9 +64,8 @@ Main commands:
   You can specify the emulator with `--emulator` and the ROM file path with `--rom` (default: `out/rom.bin`).  \
   If the emulator is not installed, a message will prompt you to run setup-emu.
 
-- `sgdktool uninstall [--config-only]`
+- `sgdktool uninstall`
   Uninstall SGDK, remove configuration, and also delete any emulators (Gens/BlastEm) installed via `setup-emu` at the paths recorded in config.toml.
-  If `--config-only` is specified, only the configuration file is removed and SGDK itself is kept.
 
 ### Simple Example
 

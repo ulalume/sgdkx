@@ -37,7 +37,8 @@ pub fn setup_sgdk(dir: Option<&str>, version: &str) {
         }
     }
     if target_dir.exists() {
-        println!("{}", rust_i18n::t!("sgdk_exists_overwrite"));
+        // 上書き確認プロンプト
+        println!("{}", rust_i18n::t!("sgdk_exists_overwrite_prompt"));
         use std::io::{self, Write};
         print!("{}", rust_i18n::t!("prompt"));
         io::stdout().flush().unwrap();
@@ -46,12 +47,93 @@ pub fn setup_sgdk(dir: Option<&str>, version: &str) {
         io::stdin().read_line(&mut input).unwrap();
         let input = input.trim().to_lowercase();
 
-        if input != "y" && input != "" {
-            println!("{}", rust_i18n::t!("operation_cancelled"));
+        if input != "y" {
+            println!("{}", rust_i18n::t!("sgdk_overwrite_cancelled"));
             std::process::exit(0);
         }
 
-        println!("{}", rust_i18n::t!("saving_config"));
+        // mac/linuxの場合はwine関連ファイル削除
+        #[cfg(not(target_os = "windows"))]
+        {
+            use std::os::unix::fs::PermissionsExt;
+            let bin_dir = target_dir.join("bin");
+            let makefile_wine = target_dir.join("makefile_wine.gen");
+            let wineconf = bin_dir.join(".wineconf");
+            let generate_wine = bin_dir.join("generate_wine.sh");
+            if generate_wine.exists() {
+                println!(
+                    "{}",
+                    rust_i18n::t!("sgdk_wine_removing", file = generate_wine.display())
+                );
+                let _ = fs::remove_file(&generate_wine);
+            }
+            if makefile_wine.exists() {
+                println!(
+                    "{}",
+                    rust_i18n::t!("sgdk_wine_removing", file = makefile_wine.display())
+                );
+                let _ = fs::remove_file(&makefile_wine);
+            }
+            if wineconf.exists() && wineconf.is_dir() {
+                println!(
+                    "{}",
+                    rust_i18n::t!("sgdk_wine_removing", file = wineconf.display())
+                );
+                let _ = fs::remove_dir_all(&wineconf);
+            }
+            // bin以下の実行ファイル削除
+            if bin_dir.exists() {
+                if let Ok(entries) = fs::read_dir(&bin_dir) {
+                    for entry in entries.flatten() {
+                        let path = entry.path();
+                        if !path.is_file() {
+                            continue;
+                        }
+                        let metadata = match fs::metadata(&path) {
+                            Ok(m) => m,
+                            Err(_) => continue,
+                        };
+                        let perm = metadata.permissions();
+                        if perm.mode() & 0o111 == 0 {
+                            continue;
+                        }
+                        println!(
+                            "{}",
+                            rust_i18n::t!("sgdk_wine_removing", file = path.display())
+                        );
+                        let _ = fs::remove_file(&path);
+                    }
+                }
+            }
+        }
+        // 既存リポジトリでgit fetch/checkout
+        if target_dir.join(".git").exists() {
+            let fetch_status = Command::new("git")
+                .arg("fetch")
+                .current_dir(&target_dir)
+                .status()
+                .expect(&rust_i18n::t!("sgdk_git_fetch_failed"));
+            if !fetch_status.success() {
+                eprintln!("{}", rust_i18n::t!("sgdk_git_fetch_failed"));
+                std::process::exit(1);
+            }
+            let checkout_status = Command::new("git")
+                .arg("checkout")
+                .arg(version)
+                .current_dir(&target_dir)
+                .status()
+                .expect(&rust_i18n::t!("sgdk_git_checkout_failed"));
+            if !checkout_status.success() {
+                eprintln!("{}", rust_i18n::t!("sgdk_git_checkout_failed"));
+                std::process::exit(1);
+            }
+        } else {
+            eprintln!("{}", rust_i18n::t!("sgdk_git_missing"));
+            std::process::exit(1);
+        }
+
+        // config.toml更新
+        println!("{}", rust_i18n::t!("sgdk_config_updating"));
         let config_dir = config_dir()
             .expect("Failed to get config directory")
             .join("sgdktool");
@@ -73,7 +155,12 @@ pub fn setup_sgdk(dir: Option<&str>, version: &str) {
         doc["sgdk"]["version"] = value(version);
 
         fs::write(&config_path, doc.to_string()).expect("Failed to write config.toml");
-        println!("{}", rust_i18n::t!("config_only_created"));
+        println!("{}", rust_i18n::t!("sgdk_config_updated"));
+
+        #[cfg(not(target_os = "windows"))]
+        {
+            run_generate_wine(&target_dir);
+        }
         return;
     }
 

@@ -67,7 +67,6 @@ brew install --cask --no-quarantine wine-crossover
 
 - `sgdktool uninstall [--config-only]`
   SGDKのアンインストールと設定ファイルの削除を行います。
-  `--config-only` を指定すると設定ファイルのみ削除し、SGDK本体は残します。
   また、`setup-emu` でインストールしたエミュレータ（gens/blastem）も、config.tomlに記載されたパスを参照して削除されます。
 
 ### 簡単な使い方例
