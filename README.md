@@ -71,7 +71,7 @@ Main commands:
 ### Simple Example
 
 ```sh
-sgdktool setup
+sgdktool setup --version v2.11 # stable
 sgdktool setup-emu
 sgdktool new your_project
 cd your_project

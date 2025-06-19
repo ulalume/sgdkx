@@ -34,46 +34,46 @@ brew install --cask --no-quarantine wine-crossover
 
 主なコマンドは以下の通りです。
 
-- `sgdktool`  
-  環境チェック・SGDKやエミュレータの設定状況・ヘルプを表示します。  
+- `sgdktool`
+  環境チェック・SGDKやエミュレータの設定状況・ヘルプを表示します。
   サブコマンドを指定しない場合、現在のSGDK/エミュレータのセットアップ状況を確認できます。
 
-- `sgdktool setup [--dir パス] [--version バージョン]`  
-  SGDK（Sega Genesis Development Kit）をダウンロード・インストールします。  
-  `--dir` でインストール先ディレクトリ（省略時は設定ディレクトリ）、`--version` でブランチ名・タグ名・コミットID（省略時はmaster）を指定できます。  
-  例:  
-    - `--version develop` で developブランチ  
-    - `--version V2.11` でタグ V2.11  
-    - `--version ef9292c0` でコミットID ef9292c0  
+- `sgdktool setup [--dir パス] [--version バージョン]`
+  SGDK（Sega Genesis Development Kit）をダウンロード・インストールします。
+  `--dir` でインストール先ディレクトリ（省略時は設定ディレクトリ）、`--version` でブランチ名・タグ名・コミットID（省略時はmaster）を指定できます。
+  例:
+    - `--version develop` で developブランチ
+    - `--version V2.11` でタグ V2.11
+    - `--version ef9292c0` でコミットID ef9292c0
   SGDKのパスやバージョンはconfig.tomlに保存されます。
 
-- `sgdktool setup-emu [gens|blastem] [--dir パス]`  
-  エミュレータ（gens または blastem）をダウンロード・セットアップします。  
-  `--dir` でインストール先を指定できます（省略時はデフォルトの設定ディレクトリ）。  
+- `sgdktool setup-emu [gens|blastem] [--dir パス]`
+  エミュレータ（gens または blastem）をダウンロード・セットアップします。
+  `--dir` でインストール先を指定できます（省略時はデフォルトの設定ディレクトリ）。
   インストールしたエミュレータのパスはconfig.tomlに保存されます。
 
-- `sgdktool new <プロジェクト名>`  
-  SGDKテンプレートから新しいプロジェクトを作成します。  
+- `sgdktool new <プロジェクト名>`
+  SGDKテンプレートから新しいプロジェクトを作成します。
   `<プロジェクト名>` という名前のディレクトリが作成され、その中にプロジェクトが生成されます。
 
-- `sgdktool make [--project ディレクトリ] [追加オプション...]`  
-  `make` を使ってSGDKプロジェクトをビルドします。  
+- `sgdktool make [--project ディレクトリ] [追加オプション...]`
+  `make` を使ってSGDKプロジェクトをビルドします。
   `--project` でプロジェクトディレクトリ（省略時はカレントディレクトリ）、追加オプションでmakeに渡す引数を指定できます。
 
-- `sgdktool run [--emulator gens|blastem] [--rom パス]`  
-  エミュレータでROMファイルを実行します。  
-  `--emulator` でエミュレータ（gens または blastem）、`--rom` でROMファイルのパスを指定できます（どちらも省略可能、デフォルトは自動検出/`out/rom.bin`）。  
+- `sgdktool run [--emulator gens|blastem] [--rom パス]`
+  エミュレータでROMファイルを実行します。
+  `--emulator` でエミュレータ（gens または blastem）、`--rom` でROMファイルのパスを指定できます（どちらも省略可能、デフォルトは自動検出/`out/rom.bin`）。
   エミュレータが未インストールの場合はsetup-emuの実行を促すメッセージが表示されます。
 
-- `sgdktool uninstall [--config-only]`  
-  SGDKのアンインストールと設定ファイルの削除を行います。  
-  `--config-only` を指定すると設定ファイルのみ削除し、SGDK本体は残します。  
+- `sgdktool uninstall [--config-only]`
+  SGDKのアンインストールと設定ファイルの削除を行います。
+  `--config-only` を指定すると設定ファイルのみ削除し、SGDK本体は残します。
   また、`setup-emu` でインストールしたエミュレータ（gens/blastem）も、config.tomlに記載されたパスを参照して削除されます。
 
 ### 簡単な使い方例
 
 ```sh
-sgdktool setup
+sgdktool setup --version v2.11 # stable
 sgdktool setup-emu
 sgdktool new your_project
 cd your_project
