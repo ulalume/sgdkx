@@ -23,15 +23,14 @@ pub fn create_project(name: &str) {
         std::process::exit(1);
     }));
 
-    // テンプレート選択
-    let template_path = select_template_dialoguer(sgdk_path);
-
     let dest_path = Path::new(name);
-
     if dest_path.exists() {
         eprintln!("{}", rust_i18n::t!("project_exists", name = name));
         std::process::exit(1);
     }
+
+    // テンプレート選択
+    let template_path = select_template_dialoguer(sgdk_path);
 
     println!("{}", rust_i18n::t!("creating_project", name = name));
 
@@ -61,70 +60,53 @@ pub fn create_project(name: &str) {
 fn select_template_dialoguer(sgdk_path: &Path) -> PathBuf {
     use dialoguer::{Select, theme::ColorfulTheme};
     let sample_root = sgdk_path.join("sample");
-    let mut current = sample_root.clone();
-    let mut parent_stack = Vec::new();
 
-    loop {
-        // srcディレクトリがあればテンプレート
-        if current.join("src").exists() {
-            println!("Selected template: {}", current.display());
-            return current;
+    // 再帰的にsrcディレクトリを持つテンプレート候補を収集
+    fn find_templates_flat(base: &Path, rel: String, out: &mut Vec<(String, PathBuf)>) {
+        if base.join("src").exists() {
+            out.push((rel.clone(), base.to_path_buf()));
         }
-
-        // サブディレクトリ一覧
-        let mut dirs: Vec<_> = std::fs::read_dir(&current)
-            .unwrap()
-            .filter_map(|e| e.ok())
-            .filter(|e| e.path().is_dir())
-            .collect();
-        dirs.sort_by_key(|e| e.file_name());
-
-        // 表示用リスト
-        let mut items = Vec::new();
-        if current != sample_root {
-            items.push("⬆️  ../ (Go up)".to_string());
-        }
-        for dir in &dirs {
-            let name = dir.file_name().to_string_lossy().to_string();
-            if dir.path().join("src").exists() {
-                items.push(format!("👾 {}", name));
-            } else {
-                items.push(format!("📁 {}", name));
-            }
-        }
-
-        let prompt = format!(
-            "Select a template in {} (Enter to select, Esc to cancel)",
-            current
-                .strip_prefix(&sample_root)
-                .unwrap_or(&current)
-                .display()
-        );
-
-        let selection = Select::with_theme(&ColorfulTheme::default())
-            .with_prompt(prompt)
-            .items(&items)
-            .default(0)
-            .interact_opt()
-            .unwrap();
-
-        match selection {
-            Some(idx) => {
-                if current != sample_root && idx == 0 {
-                    // Go up
-                    if let Some(parent) = parent_stack.pop() {
-                        current = parent;
-                    }
-                } else {
-                    let dir_idx = if current == sample_root { idx } else { idx - 1 };
-                    parent_stack.push(current.clone());
-                    current = dirs[dir_idx].path();
+        if let Ok(entries) = std::fs::read_dir(base) {
+            for entry in entries.flatten() {
+                let path = entry.path();
+                if path.is_dir() {
+                    let name = entry.file_name().to_string_lossy().to_string();
+                    let new_rel = if rel.is_empty() {
+                        name
+                    } else {
+                        format!("{}/{}", rel, name)
+                    };
+                    find_templates_flat(&path, new_rel, out);
                 }
             }
-            None => {
-                println!("Cancelled.");
-                std::process::exit(0);
-            }
+        }
+    }
+
+    let mut templates = Vec::new();
+    find_templates_flat(&sample_root, String::new(), &mut templates);
+
+    if templates.is_empty() {
+        println!("No templates found in sample directory.");
+        std::process::exit(1);
+    }
+
+    let items: Vec<_> = templates.iter().map(|(rel, _)| rel.clone()).collect();
+
+    let selection = Select::with_theme(&ColorfulTheme::default())
+        .with_prompt("Select a project template (Esc to cancel)")
+        .items(&items)
+        .default(0)
+        .interact_opt()
+        .unwrap();
+
+    match selection {
+        Some(idx) => {
+            println!("Selected template: {}", templates[idx].0);
+            templates[idx].1.clone()
+        }
+        None => {
+            println!("Cancelled.");
+            std::process::exit(0);
         }
     }
 }
