@@ -18,7 +18,11 @@ pub fn build_project(extra: &Vec<String>) {
         .unwrap()
         .parse::<DocumentMut>()
         .unwrap();
-    let sgdk_path = Path::new(doc["sgdk"]["path"].as_str().unwrap());
+    let (sgdk_path_str, _) = crate::commands::new::get_sgdk_config(&doc);
+    let sgdk_path = Path::new(sgdk_path_str.unwrap_or_else(|| {
+        eprintln!("SGDK path not found in config.toml.");
+        std::process::exit(1);
+    }));
 
     // If SGDK path contains spaces, create a temporary symlink
     let (effective_sgdk_path, temp_symlink) = if sgdk_path.to_str().unwrap().contains(' ') {

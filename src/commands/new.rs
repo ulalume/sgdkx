@@ -17,7 +17,11 @@ pub fn create_project(name: &str) {
     let doc = text
         .parse::<DocumentMut>()
         .expect(&rust_i18n::t!("toml_parse_failed"));
-    let sgdk_path = Path::new(doc["sgdk"]["path"].as_str().unwrap());
+    let (sgdk_path_str, _) = get_sgdk_config(&doc);
+    let sgdk_path = Path::new(sgdk_path_str.unwrap_or_else(|| {
+        eprintln!("SGDK path not found in config.toml.");
+        std::process::exit(1);
+    }));
 
     // テンプレート選択
     let template_path = select_template_dialoguer(sgdk_path);
@@ -83,7 +87,7 @@ fn select_template_dialoguer(sgdk_path: &Path) -> PathBuf {
         for dir in &dirs {
             let name = dir.file_name().to_string_lossy().to_string();
             if dir.path().join("src").exists() {
-                items.push(format!("🏁 {}", name));
+                items.push(format!("👾 {}", name));
             } else {
                 items.push(format!("📁 {}", name));
             }
@@ -136,6 +140,18 @@ pub fn check_compiledb_available() -> bool {
             false
         }
     }
+}
+
+/// config.tomlのsgdkインラインテーブルからpath, versionを安全に取得
+pub fn get_sgdk_config(doc: &DocumentMut) -> (Option<&str>, Option<&str>) {
+    let sgdk_table = doc.get("sgdk").and_then(|v| v.as_inline_table());
+    let path = sgdk_table
+        .and_then(|tbl| tbl.get("path"))
+        .and_then(|v| v.as_str());
+    let version = sgdk_table
+        .and_then(|tbl| tbl.get("version"))
+        .and_then(|v| v.as_str());
+    (path, version)
 }
 
 pub fn run_compiledb_make(project_path: &Path, sgdk_path: &Path) -> bool {

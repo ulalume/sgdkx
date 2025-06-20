@@ -33,7 +33,8 @@ pub fn uninstall_sgdk() {
         let text = fs::read_to_string(&config_path).ok();
         if let Some(text) = text {
             if let Ok(mut doc) = text.parse::<DocumentMut>() {
-                if let Some(sgdk_path) = doc["sgdk"]["path"].as_str() {
+                let (sgdk_path_opt, _) = crate::commands::new::get_sgdk_config(&doc);
+                if let Some(sgdk_path) = sgdk_path_opt {
                     let sgdk_dir = Path::new(sgdk_path);
                     if sgdk_dir.exists() {
                         println!(

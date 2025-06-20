@@ -21,13 +21,9 @@ pub fn run_doctor_and_info() {
 
     let config_path = config_dir().unwrap().join("sgdktool").join("config.toml");
 
-    println!("\n{}", rust_i18n::t!("sgdk_config_info"));
-
     if config_path.exists() {
         let text = fs::read_to_string(&config_path).unwrap();
         let doc = text.parse::<DocumentMut>().unwrap();
-
-        // インラインテーブル対応で安全に取得
         let sgdk_table = doc.get("sgdk").and_then(|v| v.as_inline_table());
         let path = sgdk_table
             .and_then(|tbl| tbl.get("path"))
@@ -38,6 +34,10 @@ pub fn run_doctor_and_info() {
             .and_then(|v| v.as_str())
             .unwrap_or("Unknown");
 
+        println!(
+            "\n{}",
+            rust_i18n::t!("sgdk_config_exists", path = config_path.display())
+        );
         println!("{}", rust_i18n::t!("sgdk_path", path = path));
         println!("{}", rust_i18n::t!("version", version = version));
 
@@ -99,7 +99,7 @@ pub fn run_doctor_and_info() {
             println!("{}", rust_i18n::t!("sgdk_doc_not_found"));
         }
     } else {
-        println!("{}", rust_i18n::t!("config_not_found"));
+        println!("\n{}", rust_i18n::t!("config_not_found"));
     }
 }
 
