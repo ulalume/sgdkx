@@ -52,59 +52,10 @@ pub fn setup_sgdk(dir: Option<&str>, version: &str) {
             std::process::exit(0);
         }
 
-        // mac/linuxの場合はwine関連ファイル削除
+        // mac/linuxの場合はワーキングツリーを徹底的にクリーンにする
         #[cfg(not(target_os = "windows"))]
         {
-            use std::os::unix::fs::PermissionsExt;
-            let bin_dir = target_dir.join("bin");
-            let makefile_wine = target_dir.join("makefile_wine.gen");
-            let wineconf = bin_dir.join(".wineconf");
-            let generate_wine = bin_dir.join("generate_wine.sh");
-            if generate_wine.exists() {
-                println!(
-                    "{}",
-                    rust_i18n::t!("sgdk_wine_removing", file = generate_wine.display())
-                );
-                let _ = fs::remove_file(&generate_wine);
-            }
-            if makefile_wine.exists() {
-                println!(
-                    "{}",
-                    rust_i18n::t!("sgdk_wine_removing", file = makefile_wine.display())
-                );
-                let _ = fs::remove_file(&makefile_wine);
-            }
-            if wineconf.exists() && wineconf.is_dir() {
-                println!(
-                    "{}",
-                    rust_i18n::t!("sgdk_wine_removing", file = wineconf.display())
-                );
-                let _ = fs::remove_dir_all(&wineconf);
-            }
-            // bin以下の実行ファイル削除
-            if bin_dir.exists() {
-                if let Ok(entries) = fs::read_dir(&bin_dir) {
-                    for entry in entries.flatten() {
-                        let path = entry.path();
-                        if !path.is_file() {
-                            continue;
-                        }
-                        let metadata = match fs::metadata(&path) {
-                            Ok(m) => m,
-                            Err(_) => continue,
-                        };
-                        let perm = metadata.permissions();
-                        if perm.mode() & 0o111 == 0 {
-                            continue;
-                        }
-                        println!(
-                            "{}",
-                            rust_i18n::t!("sgdk_wine_removing", file = path.display())
-                        );
-                        let _ = fs::remove_file(&path);
-                    }
-                }
-            }
+            reset_sgdk_worktree(&target_dir);
         }
         // 既存リポジトリでgit fetch/checkout
         if target_dir.join(".git").exists() {
@@ -161,6 +112,8 @@ pub fn setup_sgdk(dir: Option<&str>, version: &str) {
         {
             run_generate_wine(&target_dir);
         }
+
+        generate_sgdk_doc(&target_dir);
         return;
     }
 
@@ -246,10 +199,61 @@ pub fn setup_sgdk(dir: Option<&str>, version: &str) {
         run_generate_wine(&target_dir);
     }
 
+    generate_sgdk_doc(&target_dir);
+
     println!(
         "{}",
         rust_i18n::t!("sgdk_setup_complete", path = target_dir.display())
     );
+}
+
+#[cfg(not(target_os = "windows"))]
+fn reset_sgdk_worktree(target_dir: &Path) {
+    use std::fs;
+    // 1. git reset --hard
+    let reset_status = std::process::Command::new("git")
+        .args(&["reset", "--hard"])
+        .current_dir(target_dir)
+        .status();
+
+    match reset_status {
+        Ok(s) if s.success() => {
+            println!("git reset --hard executed successfully.");
+        }
+        Ok(s) => {
+            eprintln!("git reset --hard exited with code {:?}", s.code());
+        }
+        Err(e) => {
+            eprintln!("failed to execute git reset --hard: {}", e);
+        }
+    }
+
+    // 2. git clean -dfx .（2回実行）
+    for i in 1..=2 {
+        let clean_status = std::process::Command::new("git")
+            .args(&["clean", "-dfx", "."])
+            .current_dir(target_dir)
+            .status();
+
+        match clean_status {
+            Ok(s) if s.success() => {
+                println!("git clean -dfx . executed successfully (pass {}).", i);
+            }
+            Ok(s) => {
+                eprintln!("git clean exited with code {:?} (pass {}).", s.code(), i);
+            }
+            Err(e) => {
+                eprintln!("failed to execute git clean (pass {}): {}", i, e);
+            }
+        }
+    }
+
+    // 3. tools/sjasm ディレクトリを明示的に削除
+    let sjasm_dir = target_dir.join("tools").join("sjasm");
+    if sjasm_dir.exists() {
+        println!("Removing problematic directory: {}", sjasm_dir.display());
+        let _ = fs::remove_dir_all(&sjasm_dir);
+    }
 }
 
 #[cfg(not(target_os = "windows"))]
@@ -280,3 +284,77 @@ fn run_generate_wine(sgdk_path: &Path) {
 
     println!("{}", rust_i18n::t!("wine_wrapper_complete"));
 }
+
+/// SGDKドキュメント生成（doxygenがある場合のみ）
+fn generate_sgdk_doc(target_dir: &Path) {
+    if which("doxygen").is_ok() {
+        use regex::Regex;
+        let doc_dir = target_dir.join("doc");
+        let html_index = doc_dir.join("html").join("index.html");
+        let doxyconfig = doc_dir.join("doxyconfig");
+        let temp_path = doc_dir.join("temp_doxyconfig");
+
+        // すでにdoc/html/index.htmlが存在する場合は何もしない
+        if html_index.exists() {
+            return;
+        }
+
+        // doc/doxyconfigがある場合のみ生成
+        if doxyconfig.exists() {
+            // 1. doxyconfig をコピー
+            if let Err(e) = fs::copy(&doxyconfig, &temp_path) {
+                eprintln!("Failed to copy doxygen config: {}", e);
+                return;
+            }
+
+            // 2. ファイル内容を読み込み
+            if let Ok(content) = fs::read_to_string(&temp_path) {
+                // 3. OUTPUT_DIRECTORY の行を正規表現で置き換え
+                let re = Regex::new(r"(?m)^OUTPUT_DIRECTORY\s*=.*$").unwrap();
+                let new_content = re.replace_all(&content, "OUTPUT_DIRECTORY = ./SGDK/doc");
+                // 4. 修正後の内容を書き戻し
+                if let Err(e) = fs::write(&temp_path, new_content.as_ref()) {
+                    eprintln!("Failed to write temp_doxyconfig: {}", e);
+                } else {
+                    // 5. doxygen を実行
+                    let parent_dir = target_dir.parent().unwrap_or(target_dir);
+                    let status = Command::new("doxygen")
+                        .arg(&temp_path)
+                        .current_dir(parent_dir)
+                        .status();
+                    match status {
+                        Ok(s) if s.success() => {
+                            println!("{}", rust_i18n::t!("sgdk_doc_generated"));
+                        }
+                        Ok(s) => {
+                            eprintln!("doxygen exited with code {:?}", s.code());
+                        }
+                        Err(e) => {
+                            eprintln!("failed to execute doxygen: {}", e);
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
+// /// SGDKディレクトリをOSごとに開く
+// fn open_sgdk_dir(sgdk_path: &Path) {
+//     #[cfg(target_os = "macos")]
+//     {
+//         let _ = std::process::Command::new("open").arg(sgdk_path).status();
+//     }
+//     #[cfg(target_os = "windows")]
+//     {
+//         let _ = std::process::Command::new("explorer")
+//             .arg(sgdk_path)
+//             .status();
+//     }
+//     #[cfg(all(unix, not(target_os = "macos")))]
+//     {
+//         let _ = std::process::Command::new("xdg-open")
+//             .arg(sgdk_path)
+//             .status();
+//     }
+// }
