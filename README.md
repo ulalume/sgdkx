@@ -1,6 +1,6 @@
 # SGDKTool
 
-🇯🇵 日本語版READMEは[こちら](./README.ja.md)をご覧ください。
+🇯🇵 日本語版 README は[こちら](./README.ja.md)をご覧ください。
 
 **This tool is under active development. There is a significant lack of tests. Use at your own risk!**
 
@@ -38,40 +38,40 @@ brew install doxygen # options
 
 Main commands:
 
-- `sgdktool`
+- `sgdktool`<br>
   Show environment check, SGDK/emulator configuration, and help message.
-  If no subcommand is given, displays the current SGDK and emulator setup status.
 
-- `sgdktool setup [--dir <path>] [--version <version>]`
-  Download and install SGDK (Sega Genesis Development Kit).
-  You can specify the installation directory with `--dir` (default: config directory), and the version with `--version` (default: master).
-  The `--version` option accepts a branch name, tag, or commit ID.
-  Examples:
-    - `--version V2.11` for tag V2.11
-    - `--version ef9292c0` for commit ID ef9292c0
-  The SGDK path and version are saved in config.toml.
-  Additionally, **if doxygen is installed and SGDK documentation does not exist, documentation will be generated automatically.**
+- `sgdktool setup [--dir <path>] [--version <version>]` <br>
+  Download and install SGDK (Sega Genesis Development Kit).<br>
+  You can specify the installation directory with `--dir` (default: config directory), and the version with `--version` (default: master).<br>
+  The `--version` option accepts a branch name, tag, or commit ID.<br>
+  Examples:<br>
 
-- `sgdktool setup-emu [gens|blastem] [--dir <path>]`
-  Download and install an emulator (Gens or BlastEm).
-  You can specify the installation directory with `--dir` (default: config directory).
+  - `--version V2.11` for tag V2.11
+  - `--version ef9292c0` for commit ID ef9292c0
+    The SGDK path and version are saved in config.toml.<br>
+    Additionally, **if doxygen is installed and SGDK documentation does not exist, documentation will be generated automatically.**
+
+- `sgdktool setup-emu [gens|blastem] [--dir <path>]`<br>
+  Download and install an emulator (Gens or BlastEm).<br>
+  You can specify the installation directory with `--dir` (default: config directory).<br>
   The path to the emulator is saved in config.toml.
 
-- `sgdktool new <project_name>`
+- `sgdktool new <project_name>`<br>
   Create a new project from the SGDK sample.
 
-- `sgdktool make [--project <dir>] [<extra options>...]`
-  Build the SGDK project using `make`.
+- `sgdktool make [--project <dir>] [<extra options>...]`<br>
+  Build the SGDK project using `make`.<br>
   You can specify the project directory with `--project` (default: current directory), and pass extra options to `make`.
 
-- `sgdktool run [--emulator <gens|blastem>] [--rom <path>]`  \
-  Run the ROM file with the specified emulator (default: gens or installed emulator).  \
+- `sgdktool run [--emulator <gens|blastem>] [--rom <path>]`<br>
+  Run the ROM file with the specified emulator (default: gens or installed emulator).<br>
   You can specify the emulator with `--emulator` and the ROM file path with `--rom` (default: `out/rom.bin`).
 
-- `sgdktool uninstall`
+- `sgdktool uninstall`<br>
   Uninstall SGDK, remove configuration, and also delete any emulators (Gens/BlastEm) installed via `setup-emu` at the paths recorded in config.toml.
 
-- `sgdktool doc`
+- `sgdktool doc`<br>
   If SGDK documentation exists, it will be opened in your browser.
 
 ### Simple Example
@@ -85,7 +85,7 @@ sgdktool make
 sgdktool run
 ```
 
-### Example: Output when run without any command
+### Reference: Output when run without any command
 
 ```
 A CLI tool for SGDK-based development
@@ -114,12 +114,14 @@ Options:
 ✅ doxygen: /opt/homebrew/bin/doxygen
 ✅ wine: /opt/homebrew/bin/wine
 
-📝 SGDK Configuration Info:
+📝 SGDKTool Configuration: /Users/[user]/Library/Application Support/sgdktool/config.toml
 SGDK Path   : /Users/[user]/Library/Application Support/sgdktool/SGDK
 Version     : master
-Commit ID   : 60c99ea912387d6f5f014673d9760ef8a79e1339
-Gens Path   : /Users/[user]/Library/Application Support/sgdktool/gens/gens.exe
-blastem Path: /Users/[user]/Library/Application Support/sgdktool/blastem/blastem-win64-0.6.3-pre-b42f00a3a937/blastem.exe
+Commit ID   : 2c27b80443db8ad7e803cf2eb919b2122d458fae
+Gens Path   : Not installed
+blastem Path: Not installed
+
+📄 SGDK documentation: /Users/[user]/Library/Application Support/sgdktool/SGDK/doc/html/index.html
 ```
 
 ---

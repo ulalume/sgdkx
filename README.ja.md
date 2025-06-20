@@ -1,6 +1,6 @@
 # SGDKTool
 
-**このツールは開発中です。圧倒的にテストが足りていません。ご利用の際はご注意ください。IssueやPRは歓迎です。**
+**このツールは開発中です。圧倒的にテストが足りていません。ご利用の際はご注意ください。Issue や PR は歓迎です。**
 
 SGDKTool は、SGDK（Sega Genesis Development Kit）を用いた開発を支援する CLI ツールです。
 
@@ -36,41 +36,41 @@ brew install doxygen # options
 
 主なコマンドは以下の通りです。
 
-- `sgdktool`
-  環境チェック・SGDKやエミュレータの設定状況・ヘルプを表示します。
-  サブコマンドを指定しない場合、現在のSGDK/エミュレータのセットアップ状況を確認できます。
+- `sgdktool`<br>
+  環境チェック・SGDK やエミュレータの設定状況・ヘルプを表示します。
 
-- `sgdktool setup [--dir パス] [--version バージョン]`
-  SGDK（Sega Genesis Development Kit）をダウンロード・インストールします。
-  `--dir` でインストール先ディレクトリ（省略時は設定ディレクトリ）、`--version` でブランチ名・タグ名・コミットID（省略時はmaster）を指定できます。
+- `sgdktool setup [--dir パス] [--version バージョン]`<br>
+  SGDK（Sega Genesis Development Kit）をダウンロード・インストールします。<br>
+  `--dir` でインストール先ディレクトリ（省略時は設定ディレクトリ）、`--version` でブランチ名・タグ名・コミット ID（省略時は master）を指定できます。<br>
   例:
-    - `--version V2.11` でタグ V2.11
-    - `--version ef9292c0` でコミットID ef9292c0
-  SGDKのパスやバージョンはconfig.tomlに保存されます。
-  さらに、**doxygenがインストールされていてSGDKドキュメントが存在しない場合は、自動的にドキュメントを生成します。**
 
-- `sgdktool setup-emu [gens|blastem] [--dir パス]`
-  エミュレータ（gens または blastem）をダウンロード・セットアップします。
-  `--dir` でインストール先を指定できます（省略時はデフォルトの設定ディレクトリ）。
-  インストールしたエミュレータのパスはconfig.tomlに保存されます。
+  - `--version V2.11` でタグ V2.11
+  - `--version ef9292c0` でコミット ID ef9292c0<br>
+    SGDK のパスやバージョンは config.toml に保存されます。<br>
+    さらに、**doxygen がインストールされていて SGDK ドキュメントが存在しない場合は、自動的にドキュメントを生成します。**
 
-- `sgdktool new <プロジェクト名>`
-  SGDKサンプルから新しいプロジェクトを作成します。
+- `sgdktool setup-emu [gens|blastem] [--dir パス]`<br>
+  エミュレータ（gens または blastem）をダウンロード・セットアップします。<br>
+  `--dir` でインストール先を指定できます（省略時はデフォルトの設定ディレクトリ）。<br>
+  インストールしたエミュレータのパスは config.toml に保存されます。
 
-- `sgdktool make [--project ディレクトリ] [追加オプション...]`
-  `make` を使ってSGDKプロジェクトをビルドします。
-  `--project` でプロジェクトディレクトリ（省略時はカレントディレクトリ）、追加オプションでmakeに渡す引数を指定できます。
+- `sgdktool new <プロジェクト名>`<br>
+  SGDK サンプルから新しいプロジェクトを作成します。<br>
 
-- `sgdktool run [--emulator gens|blastem] [--rom パス]`
-  エミュレータでROMファイルを実行します。
-  `--emulator` でエミュレータ（gens または blastem）、`--rom` でROMファイルのパスを指定できます（どちらも省略可能、デフォルトは自動検出/`out/rom.bin`）。
+- `sgdktool make [--project ディレクトリ] [追加オプション...]`<br>
+  `make` を使って SGDK プロジェクトをビルドします。<br>
+  `--project` でプロジェクトディレクトリ（省略時はカレントディレクトリ）、追加オプションで make に渡す引数を指定できます。
 
-- `sgdktool uninstall [--config-only]`
-  SGDKのアンインストールと設定ファイルの削除を行います。
-  また、`setup-emu` でインストールしたエミュレータ（gens/blastem）も、config.tomlに記載されたパスを参照して削除されます。
+- `sgdktool run [--emulator gens|blastem] [--rom パス]`<br>
+  エミュレータで ROM ファイルを実行します。<br>
+  `--emulator` でエミュレータ（gens または blastem）、`--rom` で ROM ファイルのパスを指定できます（どちらも省略可能、デフォルトは自動検出/`out/rom.bin`）。
 
-- `sgdktool doc`
-  SGDKドキュメントが存在すればブラウザで開きます。
+- `sgdktool uninstall [--config-only]`<br>
+  SGDK のアンインストールと設定ファイルの削除を行います。<br>
+  また、`setup-emu` でインストールしたエミュレータ（gens/blastem）も、config.toml に記載されたパスを参照して削除されます。
+
+- `sgdktool doc`<br>
+  SGDK ドキュメントが存在すればブラウザで開きます。
 
 ### 簡単な使い方例
 
@@ -112,12 +112,14 @@ Options:
 ✅ doxygen: /opt/homebrew/bin/doxygen
 ✅ wine: /opt/homebrew/bin/wine
 
-📝 SGDK 設定情報:
+📝 SGDKToolの設定ファイル: /Users/[user]/Library/Application Support/sgdktool/config.toml
 SGDK パス   : /Users/[user]/Library/Application Support/sgdktool/SGDK
 バージョン  : master
-コミット ID : 60c99ea912387d6f5f014673d9760ef8a79e1339
-Gens パス   : /Users/[user]/Library/Application Support/sgdktool/gens/gens.exe
-blastem パス: /Users/[user]/Library/Application Support/sgdktool/blastem/blastem-win64-0.6.3-pre-b42f00a3a937/blastem.exe
+コミット ID : 2c27b80443db8ad7e803cf2eb919b2122d458fae
+Gens パス   : 未インストール
+blastem パス: 未インストール
+
+📄 SGDKドキュメント: /Users/[user]/Library/Application Support/sgdktool/SGDK/doc/html/index.html
 ```
 
 ---
