@@ -61,15 +61,15 @@ brew install doxygen # options
   `make` を使って SGDK プロジェクトをビルドします。<br>
   `--project` でプロジェクトディレクトリ（省略時はカレントディレクトリ）、追加オプションで make に渡す引数を指定できます。
 
-- `sgdktool run [--emulator gens|blastem] [--rom パス]`<br>
-  エミュレータで ROM ファイルを実行します。<br>
+- `sgdktool run [--emulator gens|blastem] [--rom パス]`
+  エミュレータで ROM ファイルを実行します。
   `--emulator` でエミュレータ（gens または blastem）、`--rom` で ROM ファイルのパスを指定できます（どちらも省略可能、デフォルトは自動検出/`out/rom.bin`）。
 
-- `sgdktool uninstall [--config-only]`<br>
-  SGDK のアンインストールと設定ファイルの削除を行います。<br>
+- `sgdktool uninstall [--config-only]`
+  SGDK のアンインストールと設定ファイルの削除を行います。
   また、`setup-emu` でインストールしたエミュレータ（gens/blastem）も、config.toml に記載されたパスを参照して削除されます。
 
-- `sgdktool doc`<br>
+- `sgdktool doc`
   SGDK ドキュメントが存在すればブラウザで開きます。
 
 ### 簡単な使い方例
