@@ -23,6 +23,8 @@ brew install make openjdk compiledb
 
 brew tap gcenx/wine
 brew install --cask --no-quarantine wine-crossover
+
+brew install doxygen # options
 ```
 
 - `git` は多くの場合プリインストールされていますが、必要に応じて `brew install git` でインストールしてください。
@@ -63,11 +65,13 @@ brew install --cask --no-quarantine wine-crossover
 - `sgdktool run [--emulator gens|blastem] [--rom パス]`
   エミュレータでROMファイルを実行します。
   `--emulator` でエミュレータ（gens または blastem）、`--rom` でROMファイルのパスを指定できます（どちらも省略可能、デフォルトは自動検出/`out/rom.bin`）。
-  エミュレータが未インストールの場合はsetup-emuの実行を促すメッセージが表示されます。
 
 - `sgdktool uninstall [--config-only]`
   SGDKのアンインストールと設定ファイルの削除を行います。
   また、`setup-emu` でインストールしたエミュレータ（gens/blastem）も、config.tomlに記載されたパスを参照して削除されます。
+
+- `sgdktool doc`
+  SGDKドキュメントが存在すればブラウザで開きます。
 
 ### 簡単な使い方例
 
@@ -93,6 +97,7 @@ Commands:
   new        SGDKテンプレートから新しいプロジェクトを作成
   make       makeを使ってプロジェクトをビルド
   run        エミュレータでROMファイルを実行
+  doc        SGDKドキュメントが存在すれば開く
   uninstall  SGDKインストールと設定をアンインストール
   help       Print this message or the help of the given subcommand(s)
 
@@ -105,6 +110,7 @@ Options:
 ✅ make: /usr/bin/make
 ✅ java: /opt/homebrew/opt/openjdk/bin/java
 ✅ compiledb: /opt/homebrew/bin/compiledb
+✅ doxygen: /opt/homebrew/bin/doxygen
 ✅ wine: /opt/homebrew/bin/wine
 
 📝 SGDK 設定情報:

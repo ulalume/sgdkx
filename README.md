@@ -25,6 +25,8 @@ brew install make openjdk compiledb
 
 brew tap gcenx/wine
 brew install --cask --no-quarantine wine-crossover
+
+brew install doxygen # options
 ```
 
 - `git` is usually pre-installed, but if not, install it with `brew install git`.
@@ -61,11 +63,13 @@ Main commands:
 
 - `sgdktool run [--emulator <gens|blastem>] [--rom <path>]`  \
   Run the ROM file with the specified emulator (default: gens or installed emulator).  \
-  You can specify the emulator with `--emulator` and the ROM file path with `--rom` (default: `out/rom.bin`).  \
-  If the emulator is not installed, a message will prompt you to run setup-emu.
+  You can specify the emulator with `--emulator` and the ROM file path with `--rom` (default: `out/rom.bin`).
 
 - `sgdktool uninstall`
   Uninstall SGDK, remove configuration, and also delete any emulators (Gens/BlastEm) installed via `setup-emu` at the paths recorded in config.toml.
+
+- `sgdktool doc`
+  If SGDK documentation exists, it will be opened in your browser.
 
 ### Simple Example
 
@@ -91,6 +95,7 @@ Commands:
   new        Create new project from SGDK template
   make       Build project using make
   run        Run ROM file with emulator
+  doc        If SGDK documentation exists, it will be opened in your browser
   uninstall  Uninstall SGDK installation and configuration
   help       Print this message or the help of the given subcommand(s)
 
@@ -103,6 +108,7 @@ Options:
 ✅ make: /usr/bin/make
 ✅ java: /opt/homebrew/opt/openjdk/bin/java
 ✅ compiledb: /opt/homebrew/bin/compiledb
+✅ doxygen: /opt/homebrew/bin/doxygen
 ✅ wine: /opt/homebrew/bin/wine
 
 📝 SGDK Configuration Info:
