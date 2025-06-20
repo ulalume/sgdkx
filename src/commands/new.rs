@@ -90,6 +90,9 @@ fn select_template_dialoguer(sgdk_path: &Path) -> PathBuf {
         std::process::exit(1);
     }
 
+    // アルファベット順（パス順）でソート
+    let mut templates = templates;
+    templates.sort_by(|a, b| a.0.cmp(&b.0));
     let items: Vec<_> = templates.iter().map(|(rel, _)| rel.clone()).collect();
 
     let selection = Select::with_theme(&ColorfulTheme::default())
