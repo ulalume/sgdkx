@@ -1,18 +1,17 @@
-use std::path::{Path, PathBuf};
-use std::fs;
 use dirs::config_dir;
-use toml_edit::{DocumentMut, value};
 use reqwest::blocking::get;
-use tempfile::NamedTempFile;
-use std::io::copy as io_copy;
-use zip::ZipArchive;
 use sevenz_rust;
+use std::fs;
+use std::io::copy as io_copy;
+use std::path::{Path, PathBuf};
+use tempfile::NamedTempFile;
+use toml_edit::{DocumentMut, value};
+use zip::ZipArchive;
 
 pub fn setup_emulator(emulator: &str, dir: Option<&str>) {
     let config_dir = config_dir()
         .expect("Unable to determine config directory")
         .join("sgdktool");
-
     let install_dir = if let Some(dir) = dir {
         PathBuf::from(dir)
     } else {
@@ -146,4 +145,4 @@ fn setup_blastem(install_dir: &Path) {
         "BlastEm nightly build installed to {}",
         install_dir.display()
     );
-} 
+}

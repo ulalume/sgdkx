@@ -26,11 +26,20 @@ pub fn run_doctor_and_info() {
     if config_path.exists() {
         let text = fs::read_to_string(&config_path).unwrap();
         let doc = text.parse::<DocumentMut>().unwrap();
-        let path = doc["sgdk"]["path"].as_str().unwrap_or("Unknown");
-        let branch = doc["sgdk"]["branch"].as_str().unwrap_or("Unknown");
+
+        // インラインテーブル対応で安全に取得
+        let sgdk_table = doc.get("sgdk").and_then(|v| v.as_inline_table());
+        let path = sgdk_table
+            .and_then(|tbl| tbl.get("path"))
+            .and_then(|v| v.as_str())
+            .unwrap_or("Unknown");
+        let version = sgdk_table
+            .and_then(|tbl| tbl.get("version"))
+            .and_then(|v| v.as_str())
+            .unwrap_or("Unknown");
 
         println!("{}", rust_i18n::t!("sgdk_path", path = path));
-        println!("{}", rust_i18n::t!("branch", branch = branch));
+        println!("{}", rust_i18n::t!("version", version = version));
 
         let commit = Command::new("git")
             .args(["rev-parse", "HEAD"])
@@ -78,7 +87,17 @@ pub fn run_doctor_and_info() {
                 println!("{}", rust_i18n::t!("blastem_not_installed"));
             }
         }
-        // === ここまで追加 ===
+
+        // === SGDK Document Info ===
+        let doc_index = Path::new(path).join("doc").join("html").join("index.html");
+        if doc_index.exists() {
+            println!(
+                "\n{}",
+                rust_i18n::t!("sgdk_doc_exists", path = doc_index.display())
+            );
+        } else {
+            println!("{}", rust_i18n::t!("sgdk_doc_not_found"));
+        }
     } else {
         println!("{}", rust_i18n::t!("config_not_found"));
     }
