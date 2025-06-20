@@ -46,7 +46,11 @@ Main commands:
   Download and install SGDK (Sega Genesis Development Kit).
   You can specify the installation directory with `--dir` (default: config directory), and the version with `--version` (default: master).
   The `--version` option accepts a branch name, tag, or commit ID.
+  Examples:
+    - `--version V2.11` for tag V2.11
+    - `--version ef9292c0` for commit ID ef9292c0
   The SGDK path and version are saved in config.toml.
+  Additionally, **if doxygen is installed and SGDK documentation does not exist, documentation will be generated automatically.**
 
 - `sgdktool setup-emu [gens|blastem] [--dir <path>]`
   Download and install an emulator (Gens or BlastEm).
@@ -54,8 +58,7 @@ Main commands:
   The path to the emulator is saved in config.toml.
 
 - `sgdktool new <project_name>`
-  Create a new project from the SGDK template.
-  The project will be created in a new directory named `<project_name>`.
+  Create a new project from the SGDK sample.
 
 - `sgdktool make [--project <dir>] [<extra options>...]`
   Build the SGDK project using `make`.
@@ -92,7 +95,7 @@ Usage: sgdktool [COMMAND]
 Commands:
   setup      Setup SGDK (clone and register path)
   setup-emu  Setup emulator for running ROM files
-  new        Create new project from SGDK template
+  new        Create new project from SGDK sample
   make       Build project using make
   run        Run ROM file with emulator
   doc        If SGDK documentation exists, it will be opened in your browser

@@ -1,7 +1,7 @@
 use dirs::config_dir;
 use rust_i18n;
 use std::fs;
-use std::path::Path;
+use std::path::{Path, PathBuf};
 use toml_edit::DocumentMut;
 
 pub fn create_project(name: &str) {
@@ -19,7 +19,9 @@ pub fn create_project(name: &str) {
         .expect(&rust_i18n::t!("toml_parse_failed"));
     let sgdk_path = Path::new(doc["sgdk"]["path"].as_str().unwrap());
 
-    let template_path = sgdk_path.join("project").join("template");
+    // テンプレート選択
+    let template_path = select_template_dialoguer(sgdk_path);
+
     let dest_path = Path::new(name);
 
     if dest_path.exists() {
@@ -49,6 +51,78 @@ pub fn create_project(name: &str) {
 
     // Create .gitignore
     create_gitignore(&dest_path);
+}
+
+/// sample配下をdialoguerで辿ってテンプレート選択。srcがあれば確定。デフォルトはsample/basics/hello-world。
+fn select_template_dialoguer(sgdk_path: &Path) -> PathBuf {
+    use dialoguer::{Select, theme::ColorfulTheme};
+    let sample_root = sgdk_path.join("sample");
+    let mut current = sample_root.clone();
+    let mut parent_stack = Vec::new();
+
+    loop {
+        // srcディレクトリがあればテンプレート
+        if current.join("src").exists() {
+            println!("Selected template: {}", current.display());
+            return current;
+        }
+
+        // サブディレクトリ一覧
+        let mut dirs: Vec<_> = std::fs::read_dir(&current)
+            .unwrap()
+            .filter_map(|e| e.ok())
+            .filter(|e| e.path().is_dir())
+            .collect();
+        dirs.sort_by_key(|e| e.file_name());
+
+        // 表示用リスト
+        let mut items = Vec::new();
+        if current != sample_root {
+            items.push("⬆️  ../ (Go up)".to_string());
+        }
+        for dir in &dirs {
+            let name = dir.file_name().to_string_lossy().to_string();
+            if dir.path().join("src").exists() {
+                items.push(format!("🏁 {}", name));
+            } else {
+                items.push(format!("📁 {}", name));
+            }
+        }
+
+        let prompt = format!(
+            "Select a template in {} (Enter to select, Esc to cancel)",
+            current
+                .strip_prefix(&sample_root)
+                .unwrap_or(&current)
+                .display()
+        );
+
+        let selection = Select::with_theme(&ColorfulTheme::default())
+            .with_prompt(prompt)
+            .items(&items)
+            .default(0)
+            .interact_opt()
+            .unwrap();
+
+        match selection {
+            Some(idx) => {
+                if current != sample_root && idx == 0 {
+                    // Go up
+                    if let Some(parent) = parent_stack.pop() {
+                        current = parent;
+                    }
+                } else {
+                    let dir_idx = if current == sample_root { idx } else { idx - 1 };
+                    parent_stack.push(current.clone());
+                    current = dirs[dir_idx].path();
+                }
+            }
+            None => {
+                println!("Cancelled.");
+                std::process::exit(0);
+            }
+        }
+    }
 }
 
 pub fn check_compiledb_available() -> bool {

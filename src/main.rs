@@ -196,9 +196,9 @@ fn create_localized_cli() -> Cli {
         .subcommand(
             Command::new("new")
                 .about(if is_japanese {
-                    "SGDKテンプレートから新しいプロジェクトを作成"
+                    "SGDKサンプルから新しいプロジェクトを作成"
                 } else {
-                    "Create new project from SGDK template"
+                    "Create new project from SGDK sample"
                 })
                 .arg(clap::Arg::new("name").required(true).help(if is_japanese {
                     "プロジェクト名（ディレクトリとして作成されます）"

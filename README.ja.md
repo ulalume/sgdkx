@@ -44,10 +44,10 @@ brew install doxygen # options
   SGDK（Sega Genesis Development Kit）をダウンロード・インストールします。
   `--dir` でインストール先ディレクトリ（省略時は設定ディレクトリ）、`--version` でブランチ名・タグ名・コミットID（省略時はmaster）を指定できます。
   例:
-    - `--version develop` で developブランチ
     - `--version V2.11` でタグ V2.11
     - `--version ef9292c0` でコミットID ef9292c0
   SGDKのパスやバージョンはconfig.tomlに保存されます。
+  さらに、**doxygenがインストールされていてSGDKドキュメントが存在しない場合は、自動的にドキュメントを生成します。**
 
 - `sgdktool setup-emu [gens|blastem] [--dir パス]`
   エミュレータ（gens または blastem）をダウンロード・セットアップします。
@@ -55,8 +55,7 @@ brew install doxygen # options
   インストールしたエミュレータのパスはconfig.tomlに保存されます。
 
 - `sgdktool new <プロジェクト名>`
-  SGDKテンプレートから新しいプロジェクトを作成します。
-  `<プロジェクト名>` という名前のディレクトリが作成され、その中にプロジェクトが生成されます。
+  SGDKサンプルから新しいプロジェクトを作成します。
 
 - `sgdktool make [--project ディレクトリ] [追加オプション...]`
   `make` を使ってSGDKプロジェクトをビルドします。
@@ -94,7 +93,7 @@ Usage: sgdktool [COMMAND]
 Commands:
   setup      SGDKをセットアップ（クローンとパス登録）
   setup-emu  ROMファイル実行用のエミュレータをセットアップ
-  new        SGDKテンプレートから新しいプロジェクトを作成
+  new        SGDKサンプルから新しいプロジェクトを作成
   make       makeを使ってプロジェクトをビルド
   run        エミュレータでROMファイルを実行
   doc        SGDKドキュメントが存在すれば開く
