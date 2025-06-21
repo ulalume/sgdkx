@@ -9,6 +9,7 @@ use commands::run::run_emulator;
 use commands::setup::setup_sgdk;
 use commands::setup_emu::setup_emulator;
 use commands::uninstall::uninstall_sgdk;
+use commands::web_export::web_export;
 
 // 多言語化の初期化
 rust_i18n::i18n!("locales");
@@ -73,6 +74,16 @@ enum Commands {
 
     /// Uninstall SGDK installation and configuration
     Uninstall,
+
+    /// Export ROM and web emulator template for web deployment
+    WebExport {
+        /// ROM file path (defaults to out/rom.bin)
+        #[arg(long, default_value = "out/rom.bin")]
+        rom: String,
+        /// Parent directory to create web-export in (defaults to current directory)
+        #[arg(long, default_value = ".")]
+        dir: String,
+    },
 }
 
 fn main() {
@@ -104,6 +115,9 @@ fn main() {
             }
             Commands::Doc => {
                 show_sgdk_doc_status();
+            }
+            Commands::WebExport { rom, dir } => {
+                web_export(Some(&rom), Some(&dir));
             }
         },
         None => {
@@ -268,6 +282,34 @@ fn create_localized_cli() -> Cli {
                             "Remove only configuration (keep SGDK installation)"
                         }),
                 ),
+        )
+        .subcommand(
+            Command::new("web-export")
+                .about(if is_japanese {
+                    "ROMとWebエミュレータテンプレートをエクスポート"
+                } else {
+                    "Export ROM and web emulator template for web deployment"
+                })
+                .arg(
+                    clap::Arg::new("rom")
+                        .long("rom")
+                        .default_value("out/rom.bin")
+                        .help(if is_japanese {
+                            "ROMファイルのパス（省略時は out/rom.bin）"
+                        } else {
+                            "ROM file path (defaults to out/rom.bin)"
+                        }),
+                )
+                .arg(
+                    clap::Arg::new("dir")
+                        .long("dir")
+                        .default_value(".")
+                        .help(if is_japanese {
+                            "web-exportディレクトリを作成する親ディレクトリ（省略時はカレントディレクトリ）"
+                        } else {
+                            "Parent directory to create web-export in (defaults to current directory)"
+                        }),
+                ),
         );
 
     let matches = app.get_matches();
@@ -311,6 +353,12 @@ fn create_localized_cli() -> Cli {
         },
         Some(("doc", _sub_matches)) => Cli {
             command: Some(Commands::Doc),
+        },
+        Some(("web-export", sub_matches)) => Cli {
+            command: Some(Commands::WebExport {
+                rom: sub_matches.get_one::<String>("rom").unwrap().clone(),
+                dir: sub_matches.get_one::<String>("dir").unwrap().clone(),
+            }),
         },
         _ => Cli { command: None },
     }
