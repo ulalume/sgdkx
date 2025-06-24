@@ -9,6 +9,8 @@ use commands::run::run_emulator;
 use commands::setup::setup_sgdk;
 use commands::setup_emu::setup_emulator;
 use commands::uninstall::uninstall_sgdk;
+use commands::web_export::web_export;
+use commands::web_server::web_server;
 
 // 多言語化の初期化
 rust_i18n::i18n!("locales");
@@ -73,6 +75,26 @@ enum Commands {
 
     /// Uninstall SGDK installation and configuration
     Uninstall,
+
+    /// Export ROM and web emulator template for web deployment
+    WebExport {
+        /// ROM file path (defaults to out/rom.bin)
+        #[arg(long, default_value = "out/rom.bin")]
+        rom: String,
+        /// Parent directory to create web-export in (defaults to current directory)
+        #[arg(long, default_value = ".")]
+        dir: String,
+    },
+
+    /// Serve web-export directory with HTTP server (with COOP/COEP headers)
+    WebServer {
+        /// Directory to serve (defaults to web-export)
+        #[arg(long, default_value = "web-export")]
+        dir: String,
+        /// Port to listen on (defaults to 8080)
+        #[arg(long, default_value = "8080")]
+        port: u16,
+    },
 }
 
 fn main() {
@@ -104,6 +126,12 @@ fn main() {
             }
             Commands::Doc => {
                 show_sgdk_doc_status();
+            }
+            Commands::WebExport { rom, dir } => {
+                web_export(Some(&rom), Some(&dir));
+            }
+            Commands::WebServer { dir, port } => {
+                web_server(Some(&dir), Some(port));
             }
         },
         None => {
@@ -268,6 +296,64 @@ fn create_localized_cli() -> Cli {
                             "Remove only configuration (keep SGDK installation)"
                         }),
                 ),
+        )
+        .subcommand(
+            Command::new("web-export")
+                .about(if is_japanese {
+                    "ROMとWebエミュレータテンプレートをエクスポート"
+                } else {
+                    "Export ROM and web emulator template for web deployment"
+                })
+                .arg(
+                    clap::Arg::new("rom")
+                        .long("rom")
+                        .default_value("out/rom.bin")
+                        .help(if is_japanese {
+                            "ROMファイルのパス（省略時は out/rom.bin）"
+                        } else {
+                            "ROM file path (defaults to out/rom.bin)"
+                        }),
+                )
+                .arg(
+                    clap::Arg::new("dir")
+                        .long("dir")
+                        .default_value(".")
+                        .help(if is_japanese {
+                            "web-exportディレクトリを作成する親ディレクトリ（省略時はカレントディレクトリ）"
+                        } else {
+                            "Parent directory to create web-export in (defaults to current directory)"
+                        }),
+                ),
+        )
+        .subcommand(
+            Command::new("web-server")
+                .about(if is_japanese {
+                    "web-exportディレクトリをHTTPサーバで公開（COOP/COEPヘッダ付き）"
+                } else {
+                    "Serve web-export directory with HTTP server (with COOP/COEP headers)"
+                })
+                .arg(
+                    clap::Arg::new("dir")
+                        .long("dir")
+                        .default_value("web-export")
+                        .help(if is_japanese {
+                            "公開するディレクトリ（省略時はweb-export）"
+                        } else {
+                            "Directory to serve (defaults to web-export)"
+                        }),
+                )
+                .arg(
+                    clap::Arg::new("port")
+                        .long("port")
+                        .default_value("8080")
+                        .value_parser(clap::value_parser!(u16))
+                        .help(if is_japanese {
+                            "待ち受けポート番号（省略時は8080）"
+                        } else {
+                            "Port to listen on (defaults to 8080)"
+                        }),
+                )
+
         );
 
     let matches = app.get_matches();
@@ -311,6 +397,12 @@ fn create_localized_cli() -> Cli {
         },
         Some(("doc", _sub_matches)) => Cli {
             command: Some(Commands::Doc),
+        },
+        Some(("web-server", sub_matches)) => Cli {
+            command: Some(Commands::WebServer {
+                dir: sub_matches.get_one::<String>("dir").unwrap().clone(),
+                port: sub_matches.get_one::<u16>("port").copied().unwrap_or(8080),
+            }),
         },
         _ => Cli { command: None },
     }

@@ -74,6 +74,20 @@ Main commands:
 - `sgdktool doc`<br>
   If SGDK documentation exists, it will be opened in your browser.
 
+---
+
+#### Experimental Features
+
+- `sgdktool web-export [--rom <path>] [--dir <parent-dir>]`<br>
+  **[Experimental]** Export your ROM and a web emulator template for browser-based play.<br>
+  This command copies a web emulator template (HTML/JS/WASM) and your ROM into a new `web-export` directory under the specified parent directory (default: current directory).<br>
+  You can then serve this directory to play your game in a browser.
+
+- `sgdktool web-server [--dir <directory>] [--port <port>]`<br>
+  **[Experimental]** Serve the `web-export` directory with a built-in HTTP server (with COOP/COEP headers for WASM compatibility).<br>
+  By default, serves the `web-export` directory on `localhost:8080`. You can change the directory and port with options.<br>
+  Example: `sgdktool web-server --dir web-export --port 9000`
+
 ### Simple Example
 
 ```sh
@@ -93,14 +107,16 @@ A CLI tool for SGDK-based development
 Usage: sgdktool [COMMAND]
 
 Commands:
-  setup      Setup SGDK (clone and register path)
-  setup-emu  Setup emulator for running ROM files
-  new        Create new project from SGDK sample
-  make       Build project using make
-  run        Run ROM file with emulator
-  doc        If SGDK documentation exists, it will be opened in your browser
-  uninstall  Uninstall SGDK installation and configuration
-  help       Print this message or the help of the given subcommand(s)
+  setup       Setup SGDK (clone and register path)
+  setup-emu   Setup emulator for running ROM files
+  new         Create new project from SGDK sample
+  make        Build project using make
+  run         Run ROM file with emulator
+  doc         If SGDK documentation exists, it will be opened in your browser
+  uninstall   Uninstall SGDK installation and configuration
+  web-export  Export ROM and web emulator template for web deployment
+  web-server  Serve web-export directory with HTTP server (with COOP/COEP headers)
+  help        Print this message or the help of the given subcommand(s)
 
 Options:
   -h, --help     Print help
@@ -130,6 +146,7 @@ blastem Path: Not installed
 
 - [SGDK (by Stephane-D)](https://github.com/Stephane-D/SGDK)
 - [SGDK_wine (by Franticware)](https://github.com/Franticware/SGDK_wine)
+- [jgenesis](https://github.com/jsgroth/jgenesis)
 
 Special thanks to these excellent projects.
 

@@ -1,0 +1,560 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <title>jgenesis web</title>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <style>
+      .hidden {
+        visibility: hidden;
+        display: none;
+      }
+      .cursor-hidden {
+        cursor: none;
+      }
+
+      body {
+        background-color: black;
+        color: white;
+        font-family: sans-serif;
+        font-size: 12px;
+        margin: 0;
+        padding: 0;
+        width: 100%;
+        height: 100dvh;
+        overflow: hidden;
+      }
+
+      #jgenesis {
+        display: grid;
+        grid-template-columns: 1fr 200px;
+        width: 100%;
+        height: 100%;
+      }
+      #jgenesis.start {
+        grid-template-columns: 1fr 201px;
+      }
+      #jgenesis.fullscreen {
+        grid-template-columns: 1fr;
+      }
+
+      #jgenesis-wasm {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        width: 100%;
+        height: 100dvh;
+        position: relative;
+      }
+      canvas {
+        margin: 0;
+        width: 100%;
+        height: 100%;
+        object-fit: contain;
+      }
+
+      #jgenesis-config {
+        max-height: 100dvh;
+        width: 100%;
+        padding: 10px;
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+        overflow-y: scroll;
+        box-sizing: border-box;
+      }
+      fieldset {
+        display: flex;
+        flex-direction: column;
+      }
+      .controls {
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+      }
+      .config {
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+      }
+      .start-button {
+        position: absolute;
+        width: 100%;
+        height: 100%;
+        background-color: rgba(0, 0, 0, 0.5);
+        font-size: 24px;
+        cursor: pointer;
+        color: white;
+        border: none;
+        border-radius: 5px;
+        transition: opacity 0.5s ease-in-out;
+      }
+      .opacity-0 {
+        opacity: 0;
+      }
+      .settings-button {
+        position: absolute;
+        top: 10px;
+        right: 10px;
+        background-color: rgba(0, 0, 0, 0.5);
+        border: none;
+        border-radius: 5px;
+        cursor: pointer;
+      }
+    </style>
+  </head>
+  <body>
+    <div id="jgenesis" class="hidden">
+      <main id="jgenesis-wasm">
+        <input type="button" class="start-button" value="Start" />
+        <button class="settings-button hidden">
+          <img src="img/cog.svg" />
+        </button>
+      </main>
+      <aside id="jgenesis-config" class="hide-fullscreen">
+        <div class="controls">
+          <input type="button" class="fullscreen-button" value="Fullscreen" />
+          <input type="button" id="reset-emulator" value="Reset" />
+          <input
+            type="button"
+            id="upload-save-file"
+            class="save-button"
+            value="Upload save file and reset"
+            disabled
+          />
+          <input
+            type="button"
+            id="download-save-file"
+            class="save-button"
+            value="Download save file"
+            disabled
+          />
+        </div>
+        <div class="config">
+          <fieldset>
+            <legend>Image filtering</legend>
+
+            <label
+              ><input
+                type="radio"
+                id="image-filter-nearest"
+                name="image-filter"
+                value="Nearest"
+              />Nearest neighbor</label
+            >
+
+            <label>
+              <input
+                type="radio"
+                id="image-filter-linear"
+                name="image-filter"
+                value="Linear"
+                checked
+              />Linear interpolation</label
+            >
+          </fieldset>
+
+          <fieldset>
+            <legend>Blending shader</legend>
+            <label>
+              <input
+                type="radio"
+                id="blend-shader-none"
+                name="blend-shader"
+                value="None"
+                checked
+              />None</label
+            >
+            <label>
+              <input
+                type="radio"
+                id="blend-shader-hblur-2px"
+                name="blend-shader"
+                value="HorizontalBlurTwoPixels"
+              />2-pixel horizontal blur</label
+            >
+            <label>
+              <input
+                type="radio"
+                id="blend-shader-hblur-3px"
+                name="blend-shader"
+                value="HorizontalBlurThreePixels"
+              />3-pixel horizontal blur</label
+            >
+            <label>
+              <input
+                type="radio"
+                id="blend-shader-anti-dither-weak"
+                name="blend-shader"
+                value="AntiDitherWeak"
+              />Conservative anti-dither</label
+            >
+            <label>
+              <input
+                type="radio"
+                id="blend-shader-anti-dither-strong"
+                name="blend-shader"
+                value="AntiDitherStrong"
+              />Aggressive anti-dither</label
+            >
+          </fieldset>
+
+          <fieldset>
+            <legend>Prescale factor</legend>
+
+            <label>
+              <input
+                type="radio"
+                id="prescale-factor-one"
+                name="prescale-factor"
+                value="1"
+              />1x</label
+            >
+
+            <label>
+              <input
+                type="radio"
+                id="prescale-factor-two"
+                name="prescale-factor"
+                value="2"
+              />2x</label
+            >
+
+            <label>
+              <input
+                type="radio"
+                id="prescale-factor-three"
+                name="prescale-factor"
+                value="3"
+                checked
+              />3x</label
+            >
+
+            <label>
+              <input
+                type="radio"
+                id="prescale-factor-four"
+                name="prescale-factor"
+                value="4"
+              />4x</label
+            >
+          </fieldset>
+          <fieldset>
+            <legend>Aspect ratio</legend>
+            <label>
+              <input
+                type="radio"
+                id="gen-aspect-ntsc"
+                name="gen-aspect-ratio"
+                value="Ntsc"
+                checked
+              />NTSC</label
+            >
+
+            <label>
+              <input
+                type="radio"
+                id="gen-aspect-pal"
+                name="gen-aspect-ratio"
+                value="Pal"
+              />PAL</label
+            >
+
+            <label>
+              <input
+                type="radio"
+                id="gen-aspect-square-pixels"
+                name="gen-aspect-ratio"
+                value="SquarePixels"
+              />Square pixels</label
+            >
+          </fieldset>
+          <fieldset>
+            <legend>Main CPU speed</legend>
+            <label>
+              <input
+                type="radio"
+                id="gen-divider-7"
+                name="gen-m68k-divider"
+                value="7"
+                checked
+              />100%</label
+            >
+            <label>
+              <input
+                type="radio"
+                id="gen-divider-6"
+                name="gen-m68k-divider"
+                value="6"
+              />117%</label
+            >
+            <label>
+              <input
+                type="radio"
+                id="gen-divider-5"
+                name="gen-m68k-divider"
+                value="5"
+              />140%</label
+            >
+            <label>
+              <input
+                type="radio"
+                id="gen-divider-4"
+                name="gen-m68k-divider"
+                value="4"
+              />175%</label
+            >
+            <label>
+              <input
+                type="radio"
+                id="gen-divider-3"
+                name="gen-m68k-divider"
+                value="3"
+              />233%</label
+            >
+          </fieldset>
+
+          <fieldset>
+            <label>
+              <input
+                type="checkbox"
+                id="genesis-non-linear-color-scale"
+                checked
+              />Emulate non-linear VDP color scale</label
+            >
+            <label for="genesis-remove-sprite-limits"
+              ><input type="checkbox" id="genesis-remove-sprite-limits" />
+              Remove sprite-per-scanline and sprite-pixel-per-scanline
+              limits</label
+            >
+            <label for="genesis-emulate-low-pass"
+              ><input type="checkbox" id="genesis-emulate-low-pass" checked />
+              Emulate 3.39 KHz low-pass filter</label
+            >
+
+            <label for="genesis-render-vertical-border"
+              ><input type="checkbox" id="genesis-render-vertical-border" />
+              Render vertical border</label
+            >
+
+            <label for="genesis-render-horizontal-border"
+              ><input type="checkbox" id="genesis-render-horizontal-border" />
+              Render horizontal border</label
+            >
+          </fieldset>
+        </div>
+
+        <div id="footer">
+          <p>
+            Source and native version:
+            <a target="_blank" href="https://github.com/jsgroth/jgenesis"
+              >jgenesis</a
+            >
+          </p>
+        </div>
+      </aside>
+    </div>
+    <script type="module">
+      import init, {
+        EmulatorChannel,
+        WebConfigRef,
+        base64_decode,
+        run_emulator,
+      } from "./pkg/jgenesis_web_simple.js";
+
+      await init();
+
+      let config = new WebConfigRef();
+      let channel = new EmulatorChannel();
+
+      // ROM自動ロード
+      async function loadRom() {
+        try {
+          const response = await fetch("rom.bin");
+          if (!response.ok) throw new Error("ROM fetch failed");
+
+          const romData = await response.arrayBuffer();
+          const romBytes = new Uint8Array(romData);
+          const fileName = "rom.bin";
+
+          channel.auto_load_rom(romBytes, fileName);
+        } catch (error) {
+          console.error("ROM loading error:", error);
+        }
+      }
+
+      function downloadSaveFile() {
+        let currentFileName = channel.current_file_name();
+        let saveBytesB64 = localStorage.getItem(currentFileName);
+        if (!saveBytesB64) {
+          alert(`No save file found for '${currentFileName}'`);
+          return;
+        }
+
+        let saveBytes = base64_decode(saveBytesB64);
+        if (!saveBytes) {
+          alert(`Save file for '${currentFileName}' is invalid`);
+          return;
+        }
+
+        let saveFileName = currentFileName.replace(/\.[a-zA-Z]*$/, ".sav");
+
+        let a = document.createElement("a");
+        a.href = window.URL.createObjectURL(
+          new Blob([saveBytes], { type: "application/octet-stream" })
+        );
+        a.download = saveFileName;
+
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+      }
+
+      document
+        .getElementById("reset-emulator")
+        .addEventListener("click", () => {
+          // yes no
+          if (
+            !confirm(
+              "Are you sure you want to reset the emulator? This will lose any unsaved progress."
+            )
+          )
+            return;
+          channel.request_reset();
+        });
+
+      document
+        .getElementById("download-save-file")
+        .addEventListener("click", downloadSaveFile);
+
+      document
+        .getElementById("upload-save-file")
+        .addEventListener("click", () => {
+          channel.request_upload_save_file();
+        });
+
+      document
+        .querySelectorAll("input[name='image-filter']")
+        .forEach((element) => {
+          element.addEventListener("change", (event) => {
+            config.set_filter_mode(event.target.value);
+          });
+        });
+
+      document
+        .querySelectorAll("input[name='blend-shader']")
+        .forEach((element) => {
+          element.addEventListener("change", (event) => {
+            config.set_preprocess_shader(event.target.value);
+          });
+        });
+
+      document
+        .querySelectorAll("input[name='prescale-factor']")
+        .forEach((element) => {
+          element.addEventListener("change", (event) => {
+            config.set_prescale_factor(parseInt(event.target.value));
+          });
+        });
+
+      document
+        .querySelectorAll("input[name='gen-aspect-ratio']")
+        .forEach((element) => {
+          element.addEventListener("change", (event) => {
+            config.set_genesis_aspect_ratio(event.target.value);
+          });
+        });
+
+      document
+        .querySelectorAll("input[name='gen-m68k-divider']")
+        .forEach((element) => {
+          element.addEventListener("change", (event) => {
+            config.set_genesis_m68k_divider(event.target.value);
+          });
+        });
+
+      document
+        .getElementById("genesis-remove-sprite-limits")
+        .addEventListener("change", (event) => {
+          config.set_genesis_remove_sprite_limits(event.target.checked);
+        });
+
+      document
+        .getElementById("genesis-non-linear-color-scale")
+        .addEventListener("change", (event) => {
+          config.set_genesis_non_linear_color_scale(event.target.checked);
+        });
+
+      document
+        .getElementById("genesis-emulate-low-pass")
+        .addEventListener("change", (event) => {
+          config.set_genesis_emulate_low_pass(event.target.checked);
+        });
+
+      document
+        .getElementById("genesis-render-vertical-border")
+        .addEventListener("change", (event) => {
+          config.set_genesis_render_vertical_border(event.target.checked);
+        });
+
+      document
+        .getElementById("genesis-render-horizontal-border")
+        .addEventListener("change", (event) => {
+          config.set_genesis_render_horizontal_border(event.target.checked);
+        });
+
+      run_emulator(config.clone(), channel.clone());
+
+      function isFullscreenAvailable() {
+        const el = document.documentElement;
+        return !!(
+          el.requestFullscreen ||
+          el.webkitRequestFullscreen ||
+          el.mozRequestFullScreen ||
+          el.msRequestFullscreen
+        );
+      }
+
+      function toggleFullScreen() {
+        if (isFullscreenAvailable()) channel.request_toggle_fullscreen();
+        else {
+          isFullscreen = !isFullscreen;
+          document.querySelectorAll(".hide-fullscreen").forEach((element) => {
+            element.hidden = isFullscreen;
+            element.classList.toggle("hidden", isFullscreen);
+          });
+          document
+            .getElementById("jgenesis")
+            .classList.toggle("fullscreen", isFullscreen);
+          document
+            .getElementsByClassName("settings-button")[0]
+            .classList.toggle("hidden", !isFullscreen);
+        }
+      }
+
+      let isFullscreen = false;
+      document
+        .getElementsByClassName("fullscreen-button")[0]
+        .addEventListener("click", toggleFullScreen);
+      document
+        .getElementsByClassName("settings-button")[0]
+        .addEventListener("click", toggleFullScreen);
+
+      let startButton = document.querySelector(".start-button");
+      // if click everything start autoloadrom
+      function onClickStage() {
+        loadRom();
+        startButton.classList.add("opacity-0");
+        setTimeout(() => {
+          startButton.removeEventListener("click", onClickStage);
+          startButton.remove();
+          startButton = null;
+        }, 500);
+        if (!isFullscreenAvailable() && !isFullscreen) {
+          toggleFullScreen();
+        }
+      }
+      startButton.addEventListener("click", onClickStage);
+    </script>
+  </body>
+</html>

@@ -72,6 +72,21 @@ brew install doxygen # options
 - `sgdktool doc`
   SGDK ドキュメントが存在すればブラウザで開きます。
 
+---
+
+#### 実験的な機能
+
+- `sgdktool web-export [--rom <パス>] [--dir <親ディレクトリ>]`
+  **【実験的】** ROMファイルとWebエミュレータ用テンプレートをエクスポートします。  
+  このコマンドはWebエミュレータのテンプレート（HTML/JS/WASM）とROMを指定ディレクトリ配下の `web-export` ディレクトリにコピーします。  
+  生成されたディレクトリをWebサーバで公開することで、ブラウザ上でゲームを動かせます。
+
+- `sgdktool web-server [--dir <ディレクトリ>] [--port <ポート>]`
+  **【実験的】** `web-export` ディレクトリを組み込みHTTPサーバで公開します（WASM対応のCOOP/COEPヘッダ付き）。  
+  デフォルトでは `web-export` ディレクトリを `localhost:8080` で公開します。  
+  ディレクトリやポートはオプションで変更できます。  
+  例: `sgdktool web-server --dir web-export --port 9000`
+
 ### 簡単な使い方例
 
 ```sh
@@ -91,14 +106,16 @@ SGDKサポートCLIツール
 Usage: sgdktool [COMMAND]
 
 Commands:
-  setup      SGDKをセットアップ（クローンとパス登録）
-  setup-emu  ROMファイル実行用のエミュレータをセットアップ
-  new        SGDKサンプルから新しいプロジェクトを作成
-  make       makeを使ってプロジェクトをビルド
-  run        エミュレータでROMファイルを実行
-  doc        SGDKドキュメントが存在すれば開く
-  uninstall  SGDKインストールと設定をアンインストール
-  help       Print this message or the help of the given subcommand(s)
+  setup       SGDKをセットアップ（クローンとパス登録）
+  setup-emu   ROMファイル実行用のエミュレータをセットアップ
+  new         SGDKサンプルから新しいプロジェクトを作成
+  make        makeを使ってプロジェクトをビルド
+  run         エミュレータでROMファイルを実行
+  doc         SGDKドキュメントが存在すれば開く
+  web-export  ROMとWebエミュレータテンプレートをエクスポート
+  web-server  web-exportディレクトリをHTTPサーバで公開（COOP/COEPヘッダ付き）
+  uninstall   SGDKインストールと設定をアンインストール
+  help        Print this message or the help of the given subcommand(s)
 
 Options:
   -h, --help     Print help
@@ -128,6 +145,7 @@ blastem パス: 未インストール
 
 - [SGDK (by Stephane-D)](https://github.com/Stephane-D/SGDK)
 - [SGDK_wine (by Franticware)](https://github.com/Franticware/SGDK_wine)
+- [jgenesis](https://github.com/jsgroth/jgenesis)
 
 これらの素晴らしいプロジェクトに感謝します。
 
