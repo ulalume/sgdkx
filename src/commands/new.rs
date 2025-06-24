@@ -4,6 +4,23 @@ use std::fs;
 use std::path::{Path, PathBuf};
 use toml_edit::DocumentMut;
 
+/// シェル用にパスをエスケープする
+pub fn escape_path(path: &str) -> String {
+    // エスケープが必要な特殊文字のリスト
+    const CHARS_TO_ESCAPE: &str = " \t\n;&|<>()$`\\\"'*?[]#~=";
+
+    let mut result = String::with_capacity(path.len() * 2); // 余裕を持って確保
+
+    for c in path.chars() {
+        if CHARS_TO_ESCAPE.contains(c) {
+            result.push('\\');
+        }
+        result.push(c);
+    }
+
+    result
+}
+
 pub fn create_project(name: &str) {
     let config_path = config_dir().unwrap().join("sgdktool/config.toml");
 
@@ -142,39 +159,18 @@ pub fn get_sgdk_config(doc: &DocumentMut) -> (Option<&str>, Option<&str>) {
 pub fn run_compiledb_make(project_path: &Path, sgdk_path: &Path) -> bool {
     println!("{}", rust_i18n::t!("running_compiledb"));
 
-    // If SGDK path contains spaces, create a temporary symlink
-    let (effective_sgdk_path, temp_symlink) = if sgdk_path.to_str().unwrap().contains(' ') {
-        println!("{}", rust_i18n::t!("compiledb_symlink_created"));
-        let temp_dir = std::env::temp_dir();
-        let symlink_path = temp_dir.join("sgdk_no_spaces");
-
-        // Remove existing symlink if it exists
-        if symlink_path.exists() {
-            let _ = fs::remove_file(&symlink_path);
-        }
-
-        // Create symlink
-        match std::os::unix::fs::symlink(sgdk_path, &symlink_path) {
-            Ok(_) => (symlink_path, true),
-            Err(_) => {
-                println!("{}", rust_i18n::t!("compiledb_symlink_failed"));
-                return false;
-            }
-        }
-    } else {
-        (sgdk_path.to_path_buf(), false)
-    };
+    let sgdk_path_str = sgdk_path.to_str().unwrap();
+    let escaped_sgdk_path = escape_path(sgdk_path_str);
+    println!("Using SGDK path: {}", escaped_sgdk_path);
 
     #[cfg(target_os = "windows")]
-    let makefile = effective_sgdk_path.join("makefile.gen");
+    let makefile = sgdk_path.join("makefile.gen");
     #[cfg(not(target_os = "windows"))]
-    let makefile = effective_sgdk_path.join("makefile_wine.gen");
-
-    let sgdk_path_str = effective_sgdk_path.to_str().unwrap();
+    let makefile = sgdk_path.join("makefile_wine.gen");
 
     let result = match std::process::Command::new("compiledb")
         .arg("make")
-        .arg(format!("GDK={}", sgdk_path_str))
+        .arg(format!("GDK={}", escaped_sgdk_path))
         .arg("-f")
         .arg(&makefile)
         .current_dir(project_path)
@@ -202,32 +198,7 @@ pub fn run_compiledb_make(project_path: &Path, sgdk_path: &Path) -> bool {
         }
     };
 
-    // Post-process compile_commands.json to replace symlink paths with real paths
-    if temp_symlink && result {
-        fix_compile_commands_paths(project_path, &effective_sgdk_path, sgdk_path);
-    }
-
-    // Clean up temporary symlink
-    if temp_symlink {
-        let _ = fs::remove_file(&effective_sgdk_path);
-    }
-
     result
-}
-
-pub fn fix_compile_commands_paths(project_path: &Path, symlink_path: &Path, real_sgdk_path: &Path) {
-    let compile_commands_path = project_path.join("compile_commands.json");
-
-    if let Ok(content) = fs::read_to_string(&compile_commands_path) {
-        let symlink_str = symlink_path.to_str().unwrap();
-        let real_str = real_sgdk_path.to_str().unwrap();
-
-        let fixed_content = content.replace(symlink_str, real_str);
-
-        if let Err(_) = fs::write(&compile_commands_path, fixed_content) {
-            eprintln!("Warning: Failed to fix compile_commands.json paths");
-        }
-    }
 }
 
 pub fn create_clangd_config(project_path: &Path) {
@@ -287,6 +258,7 @@ pub fn create_gitignore(project_path: &Path) {
 /.cache
 /out
 /res/**/*.h
+/res/**/*.rs
 "#;
 
     let gitignore_path = project_path.join(".gitignore");

@@ -1,10 +1,11 @@
 use dirs::config_dir;
 use rust_i18n;
 use std::fs;
-use std::os::unix::fs::symlink;
 use std::path::Path;
 use std::process::Command;
 use toml_edit::DocumentMut;
+
+use crate::commands::new::escape_path;
 
 pub fn build_project(extra: &Vec<String>) {
     let dir = Path::new(".");
@@ -24,39 +25,19 @@ pub fn build_project(extra: &Vec<String>) {
         std::process::exit(1);
     }));
 
-    // If SGDK path contains spaces, create a temporary symlink
-    let (effective_sgdk_path, temp_symlink) = if sgdk_path.to_str().unwrap().contains(' ') {
-        println!("{}", rust_i18n::t!("compiledb_symlink_created"));
-        let temp_dir = std::env::temp_dir();
-        let symlink_path = temp_dir.join("sgdk_no_spaces");
-
-        // Remove existing symlink if it exists
-        if symlink_path.exists() {
-            let _ = fs::remove_file(&symlink_path);
-        }
-
-        // Create symlink
-        match symlink(sgdk_path, &symlink_path) {
-            Ok(_) => (symlink_path, true),
-            Err(_) => {
-                eprintln!("{}", rust_i18n::t!("compiledb_symlink_failed"));
-                std::process::exit(1);
-            }
-        }
-    } else {
-        (sgdk_path.to_path_buf(), false)
-    };
+    // パス文字列を取得
+    let sgdk_path_str = sgdk_path.to_str().unwrap();
+    let escaped_sgdk_path = escape_path(sgdk_path_str);
+    println!("Using SGDK path: {}", escaped_sgdk_path);
 
     #[cfg(target_os = "windows")]
-    let makefile = effective_sgdk_path.join("makefile.gen");
+    let makefile = sgdk_path.join("makefile.gen");
     #[cfg(not(target_os = "windows"))]
-    let makefile = effective_sgdk_path.join("makefile_wine.gen");
-
-    let sgdk_path_str = effective_sgdk_path.to_str().unwrap();
+    let makefile = sgdk_path.join("makefile_wine.gen");
 
     let mut cmd = Command::new("make");
     cmd.current_dir(&dir)
-        .arg(format!("GDK={}", sgdk_path_str))
+        .arg(format!("GDK={}", escaped_sgdk_path))
         .arg("-f")
         .arg(&makefile);
 
@@ -65,11 +46,5 @@ pub fn build_project(extra: &Vec<String>) {
     }
 
     let status = cmd.status().expect("Failed to execute make");
-
-    // Clean up temporary symlink
-    if temp_symlink {
-        let _ = fs::remove_file(&effective_sgdk_path);
-    }
-
     std::process::exit(status.code().unwrap_or(1));
 }
