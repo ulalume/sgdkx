@@ -1,3 +1,4 @@
+use clap::Parser;
 use hyper::service::{make_service_fn, service_fn};
 use hyper::{Body, Request, Response, Server, StatusCode};
 use mime_guess::from_path;
@@ -8,11 +9,28 @@ use tokio::runtime::Runtime;
 
 const DEFAULT_DIR: &str = "web-export";
 const DEFAULT_ADDR: &str = "127.0.0.1";
-const DEFAULT_PORT: u16 = 8080;
+
+#[derive(Parser)]
+pub struct Args {
+    /// Directory to serve (defaults to web-export)
+    #[arg(long, default_value = "web-export")]
+    dir: String,
+    /// Port to listen on (defaults to 8080)
+    #[arg(long, default_value = "8080")]
+    port: u16,
+}
+impl Args {
+    pub fn new(dir: Option<String>, port: Option<u16>) -> Self {
+        Self {
+            dir: dir.unwrap_or_else(|| DEFAULT_DIR.to_string()),
+            port: port.unwrap_or(8080),
+        }
+    }
+}
 
 /// web_serverコマンド本体
-pub fn web_server(dir: Option<&str>, port: Option<u16>) {
-    let dir = dir.unwrap_or(DEFAULT_DIR);
+pub fn run(args: &Args) {
+    let dir = &args.dir;
     let root = PathBuf::from(dir);
 
     if !root.exists() {
@@ -27,7 +45,7 @@ pub fn web_server(dir: Option<&str>, port: Option<u16>) {
         std::process::exit(1);
     }
 
-    let port = port.unwrap_or(DEFAULT_PORT);
+    let port = args.port;
 
     println!("Starting web server for directory: {}", root.display());
     println!("Listening on http://{}:{}/", DEFAULT_ADDR, port);

@@ -1,3 +1,4 @@
+use clap::Parser;
 use dirs::config_dir;
 use std::fs;
 use std::path::{Path, PathBuf};
@@ -8,7 +9,26 @@ use which::which;
 // 多言語化
 use rust_i18n;
 
-pub fn setup_sgdk(dir: Option<&str>, version: &str) {
+#[derive(Parser)]
+pub struct Args {
+    /// Directory to clone SGDK into (defaults to config directory)
+    #[arg(long)]
+    dir: Option<String>,
+
+    /// Branch, tag, or commit ID to clone (defaults to master)
+    #[arg(long, default_value = "master")]
+    version: String,
+}
+
+impl Args {
+    pub fn new(dir: Option<String>, version: String) -> Self {
+        Self { dir, version }
+    }
+}
+
+pub fn run(args: &Args) {
+    let dir = &args.dir;
+    let version: &str = &args.version;
     if which("git").is_err() {
         eprintln!("{}", rust_i18n::t!("git_not_found"));
         std::process::exit(1);

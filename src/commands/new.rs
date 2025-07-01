@@ -1,8 +1,21 @@
+use clap::Parser;
 use dirs::config_dir;
 use rust_i18n;
 use std::fs;
 use std::path::{Path, PathBuf};
 use toml_edit::DocumentMut;
+
+#[derive(Parser)]
+pub struct Args {
+    /// Project name (will be created as a directory)
+    name: String,
+}
+
+impl Args {
+    pub fn new(name: String) -> Self {
+        Self { name }
+    }
+}
 
 /// シェル用にパスをエスケープする
 pub fn escape_path(path: &str) -> String {
@@ -21,7 +34,8 @@ pub fn escape_path(path: &str) -> String {
     result
 }
 
-pub fn create_project(name: &str) {
+pub fn run(args: &Args) {
+    let name: &str = args.name.as_str();
     let config_path = config_dir().unwrap().join("sgdktool/config.toml");
 
     // Check if config.toml exists

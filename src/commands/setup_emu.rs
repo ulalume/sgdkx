@@ -1,3 +1,4 @@
+use clap::Parser;
 use dirs::config_dir;
 use reqwest::blocking::get;
 use sevenz_rust;
@@ -8,14 +9,37 @@ use tempfile::NamedTempFile;
 use toml_edit::{DocumentMut, value};
 use zip::ZipArchive;
 
-pub fn setup_emulator(emulator: &str, dir: Option<&str>) {
+#[derive(Parser)]
+pub struct Args {
+    /// Emulator to setup (gens or blastem)
+    #[arg(default_value = "gens")]
+    emulator: String,
+
+    /// Directory to install emulator (defaults to config directory)
+    #[arg(long)]
+    dir: Option<String>,
+}
+
+impl Args {
+    pub fn new(emulator: String, dir: Option<String>) -> Self {
+        Self {
+            emulator: emulator,
+            dir,
+        }
+    }
+}
+
+pub fn run(args: &Args) {
+    let emulator = &args.emulator;
+    let dir = &args.dir;
+
     let config_dir = config_dir()
         .expect("Unable to determine config directory")
         .join("sgdktool");
     let install_dir = if let Some(dir) = dir {
         PathBuf::from(dir)
     } else {
-        config_dir.join(emulator)
+        config_dir.join(emulator.as_str())
     };
 
     if !install_dir.exists() {
@@ -23,7 +47,7 @@ pub fn setup_emulator(emulator: &str, dir: Option<&str>) {
     }
 
     // インストール処理
-    match emulator {
+    match emulator.as_str() {
         "gens" => setup_gens(&install_dir),
         "blastem" => setup_blastem(&install_dir),
         _ => {
@@ -36,7 +60,7 @@ pub fn setup_emulator(emulator: &str, dir: Option<&str>) {
     }
 
     // 実行ファイルパスを探索してconfig.tomlに保存
-    let exe_path = crate::commands::run::find_emulator_executable(&config_dir, emulator);
+    let exe_path = crate::commands::run::find_emulator_executable(&config_dir, emulator.as_str());
     if let Some(exe_path) = exe_path {
         let config_path = config_dir.join("config.toml");
         let mut doc = if config_path.exists() {

@@ -1,13 +1,36 @@
+use clap::Parser;
 use dirs::config_dir;
 use std::fs;
 use std::path::{Path, PathBuf};
 use std::process::Command;
 use which::which;
 
-pub fn run_emulator(emulator: Option<&str>, rom_path: &str) {
+#[derive(Parser)]
+pub struct Args {
+    /// Emulator to use (gens or blastem, defaults to available emulator)
+    #[arg(long)]
+    emulator: Option<String>,
+
+    /// ROM file path (defaults to out/rom.bin)
+    #[arg(long, default_value = "out/rom.bin")]
+    rom: String,
+}
+impl Args {
+    pub fn new(emulator: Option<String>, rom: Option<String>) -> Self {
+        Self {
+            emulator: emulator,
+            rom: rom.unwrap_or("out/rom.bin".to_string()),
+        }
+    }
+}
+
+pub fn run(args: &Args) {
     let config_dir = config_dir()
         .expect("Unable to determine config directory")
         .join("sgdktool");
+
+    let rom_path = &args.rom;
+    let emulator = &args.emulator;
 
     // Check if ROM file exists
     if !Path::new(rom_path).exists() {

@@ -1,16 +1,36 @@
+use clap::Parser;
 use rust_embed::RustEmbed;
 use std::fs;
 use std::path::Path;
 
 /// RustEmbedでassets/web-templateを埋め込む
 #[derive(RustEmbed)]
-#[folder = "assets/web-template/"]
+#[folder = "assets/web-template-v0.0.1"]
 struct WebTemplate;
 
+#[derive(Parser)]
+pub struct Args {
+    /// ROM file path (defaults to out/rom.bin)
+    #[arg(long, default_value = "out/rom.bin")]
+    rom: String,
+    /// Parent directory to create web-export in (defaults to current directory)
+    #[arg(long, default_value = ".")]
+    dir: String,
+}
+
+impl Args {
+    pub fn new(rom: Option<String>, dir: Option<String>) -> Self {
+        Self {
+            rom: rom.unwrap_or("out/rom.bin".to_string()),
+            dir: dir.unwrap_or(".".to_string()),
+        }
+    }
+}
+
 /// web-exportコマンド本体
-pub fn web_export(rom_path: Option<&str>, parent_dir: Option<&str>) {
+pub fn run(args: &Args) {
     // ROMファイルのパス
-    let rom_path = rom_path.unwrap_or("out/rom.bin");
+    let rom_path = &args.rom;
     let rom_src = Path::new(rom_path);
     if !rom_src.exists() {
         eprintln!("❌ ROM file not found: {}", rom_src.display());
@@ -18,7 +38,7 @@ pub fn web_export(rom_path: Option<&str>, parent_dir: Option<&str>) {
     }
 
     // 出力先ディレクトリ（<dir>/web-export）
-    let parent_dir = parent_dir.unwrap_or(".");
+    let parent_dir = &args.dir;
     let out_path = Path::new(parent_dir).join("web-export");
 
     // 出力先ディレクトリ作成

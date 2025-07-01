@@ -4,7 +4,7 @@ use std::fs;
 use std::path::Path;
 use toml_edit::DocumentMut;
 
-pub fn uninstall_sgdk() {
+pub fn run() {
     let config_dir = config_dir()
         .expect("Failed to get config directory")
         .join("sgdktool");

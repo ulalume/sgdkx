@@ -4,7 +4,7 @@ use std::path::{Path, PathBuf};
 use std::process::Command;
 use toml_edit::DocumentMut;
 
-pub fn run_doctor_and_info() {
+pub fn run() {
     show_help_output();
 
     println!("\n{}", rust_i18n::t!("environment_check"));

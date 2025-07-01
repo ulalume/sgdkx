@@ -1,3 +1,4 @@
+use clap::Parser;
 use dirs::config_dir;
 use rust_i18n;
 use std::fs;
@@ -7,7 +8,20 @@ use toml_edit::DocumentMut;
 
 use crate::commands::new::escape_path;
 
-pub fn build_project(extra: &Vec<String>) {
+#[derive(Parser)]
+pub struct Args {
+    /// Additional options to pass to make
+    #[arg(last = true)]
+    extra: Vec<String>,
+}
+impl Args {
+    pub fn new(extra: Vec<String>) -> Self {
+        Self { extra }
+    }
+}
+
+pub fn run(args: &Args) {
+    let extra = &args.extra;
     let dir = Path::new(".");
     if !dir.exists() {
         eprintln!("{}", rust_i18n::t!("project_dir_not_found"));

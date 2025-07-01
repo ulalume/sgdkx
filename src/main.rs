@@ -1,21 +1,21 @@
 use clap::{Parser, Subcommand};
 
 mod commands;
-use commands::doc::show_sgdk_doc_status;
-use commands::doctor::run_doctor_and_info;
-use commands::make::build_project;
-use commands::new::create_project;
-use commands::run::run_emulator;
-use commands::setup::setup_sgdk;
-use commands::setup_emu::setup_emulator;
-use commands::uninstall::uninstall_sgdk;
-use commands::web_export::web_export;
-use commands::web_server::web_server;
+use commands::doc;
+use commands::doctor;
+use commands::make;
+use commands::new;
+use commands::run;
+use commands::setup;
+use commands::setup_emu;
+use commands::uninstall;
+use commands::web_export;
+use commands::web_server;
 
 // 多言語化の初期化
 rust_i18n::i18n!("locales");
 
-/// SGDK support CLI tool for Mega Drive / Genesis game dev
+/// A CLI tool for SGDK-based development
 #[derive(Parser)]
 #[command(name = "sgdktool")]
 #[command(version = "0.1.0")]
@@ -26,75 +26,32 @@ struct Cli {
 
 #[derive(Subcommand)]
 enum Commands {
-    Setup {
-        /// Directory to clone SGDK into (defaults to config directory)
-        #[arg(long)]
-        dir: Option<String>,
-
-        /// Branch, tag, or commit ID to clone (defaults to master)
-        #[arg(long, default_value = "master")]
-        version: String,
-    },
+    /// Setup SGDK for development
+    Setup(setup::Args),
 
     /// Show SGDK documentation status
     Doc,
 
     /// Setup emulator for running ROM files
-    SetupEmu {
-        /// Emulator to setup (gens or blastem)
-        #[arg(default_value = "gens")]
-        emulator: String,
+    SetupEmu(setup_emu::Args),
 
-        /// Directory to install emulator (defaults to config directory)
-        #[arg(long)]
-        dir: Option<String>,
-    },
-
-    New {
-        /// Project name (will be created as a directory)
-        name: String,
-    },
+    /// Create a new SGDK project
+    New(new::Args),
 
     /// Build project using make
-    Make {
-        /// Additional options to pass to make
-        #[arg(last = true)]
-        extra: Vec<String>,
-    },
+    Make(make::Args),
 
     /// Run ROM file with emulator
-    Run {
-        /// Emulator to use (gens or blastem, defaults to available emulator)
-        #[arg(long)]
-        emulator: Option<String>,
-
-        /// ROM file path (defaults to out/rom.bin)
-        #[arg(long, default_value = "out/rom.bin")]
-        rom: String,
-    },
+    Run(run::Args),
 
     /// Uninstall SGDK installation and configuration
     Uninstall,
 
     /// Export ROM and web emulator template for web deployment
-    WebExport {
-        /// ROM file path (defaults to out/rom.bin)
-        #[arg(long, default_value = "out/rom.bin")]
-        rom: String,
-        /// Parent directory to create web-export in (defaults to current directory)
-        #[arg(long, default_value = ".")]
-        dir: String,
-    },
+    WebExport(web_export::Args),
 
     /// Serve web-export directory with HTTP server (with COOP/COEP headers)
-    WebServer {
-        /// Directory to serve (defaults to web-export)
-        #[arg(long, default_value = "web-export")]
-        dir: String,
-        /// Port to listen on (defaults to 8080)
-        #[arg(long, default_value = "8080")]
-        port: u16,
-    },
+    WebServer(web_server::Args),
 }
 
 fn main() {
@@ -104,39 +61,39 @@ fn main() {
     // 多言語化対応のCLI作成
     let cli = create_localized_cli();
 
-    match cli.command {
+    match &cli.command {
         Some(cmd) => match cmd {
-            Commands::Setup { dir, version } => {
-                setup_sgdk(dir.as_deref(), &version);
+            Commands::Setup(args) => {
+                setup::run(&args);
             }
-            Commands::SetupEmu { emulator, dir } => {
-                setup_emulator(&emulator, dir.as_deref());
+            Commands::SetupEmu(args) => {
+                setup_emu::run(&args);
             }
-            Commands::New { name } => {
-                create_project(&name);
+            Commands::New(args) => {
+                new::run(&args);
             }
-            Commands::Make { extra } => {
-                build_project(&extra);
+            Commands::Make(args) => {
+                make::run(&args);
             }
-            Commands::Run { emulator, rom } => {
-                run_emulator(emulator.as_deref(), &rom);
+            Commands::Run(args) => {
+                run::run(args);
             }
             Commands::Uninstall => {
-                uninstall_sgdk();
+                uninstall::run();
             }
             Commands::Doc => {
-                show_sgdk_doc_status();
+                doc::run();
             }
-            Commands::WebExport { rom, dir } => {
-                web_export(Some(&rom), Some(&dir));
+            Commands::WebExport(args) => {
+                web_export::run(args);
             }
-            Commands::WebServer { dir, port } => {
-                web_server(Some(&dir), Some(port));
+            Commands::WebServer(args) => {
+                web_server::run(args);
             }
         },
         None => {
             // コマンドが指定されなかったときに実行したいロジック
-            run_doctor_and_info();
+            doctor::run();
         }
     }
 }
@@ -160,7 +117,6 @@ fn create_localized_cli() -> Cli {
 
     // ロケールチェック（ライフタイムエラーを避けるため条件分岐を使用）
     let is_japanese = rust_i18n::locale().to_string() == "ja";
-
     let app = Command::new("sgdktool")
         .version("0.1.0")
         .about(if is_japanese {
@@ -361,36 +317,36 @@ fn create_localized_cli() -> Cli {
     // マッチした結果をCli構造体に変換
     match matches.subcommand() {
         Some(("setup", sub_matches)) => Cli {
-            command: Some(Commands::Setup {
-                dir: sub_matches.get_one::<String>("dir").cloned(),
-                version: sub_matches.get_one::<String>("version").unwrap().clone(),
-            }),
+            command: Some(Commands::Setup(setup::Args::new(
+                sub_matches.get_one::<String>("dir").cloned(),
+                sub_matches.get_one::<String>("version").unwrap().clone(),
+            ))),
         },
         Some(("new", sub_matches)) => Cli {
-            command: Some(Commands::New {
-                name: sub_matches.get_one::<String>("name").unwrap().clone(),
-            }),
+            command: Some(Commands::New(new::Args::new(
+                sub_matches.get_one::<String>("name").unwrap().clone(),
+            ))),
         },
         Some(("make", sub_matches)) => Cli {
-            command: Some(Commands::Make {
-                extra: sub_matches
+            command: Some(Commands::Make(make::Args::new(
+                sub_matches
                     .get_many::<String>("extra")
                     .unwrap_or_default()
                     .map(|s| s.clone())
                     .collect(),
-            }),
+            ))),
         },
         Some(("setup-emu", sub_matches)) => Cli {
-            command: Some(Commands::SetupEmu {
-                emulator: sub_matches.get_one::<String>("emulator").unwrap().clone(),
-                dir: sub_matches.get_one::<String>("dir").cloned(),
-            }),
+            command: Some(Commands::SetupEmu(setup_emu::Args::new(
+                sub_matches.get_one::<String>("emulator").unwrap().clone(),
+                sub_matches.get_one::<String>("dir").cloned(),
+            ))),
         },
         Some(("run", sub_matches)) => Cli {
-            command: Some(Commands::Run {
-                emulator: sub_matches.get_one::<String>("emulator").cloned(),
-                rom: sub_matches.get_one::<String>("rom").unwrap().clone(),
-            }),
+            command: Some(Commands::Run(run::Args::new(
+                sub_matches.get_one::<String>("emulator").cloned(),
+                sub_matches.get_one::<String>("rom").cloned(),
+            ))),
         },
         Some(("uninstall", _sub_matches)) => Cli {
             command: Some(Commands::Uninstall),
@@ -398,11 +354,17 @@ fn create_localized_cli() -> Cli {
         Some(("doc", _sub_matches)) => Cli {
             command: Some(Commands::Doc),
         },
+        Some(("web-export", sub_matches)) => Cli {
+            command: Some(Commands::WebExport(web_export::Args::new(
+                sub_matches.get_one::<String>("dir").cloned(),
+                sub_matches.get_one::<String>("output").cloned(),
+            ))),
+        },
         Some(("web-server", sub_matches)) => Cli {
-            command: Some(Commands::WebServer {
-                dir: sub_matches.get_one::<String>("dir").unwrap().clone(),
-                port: sub_matches.get_one::<u16>("port").copied().unwrap_or(8080),
-            }),
+            command: Some(Commands::WebServer(web_server::Args::new(
+                sub_matches.get_one::<String>("dir").cloned(),
+                sub_matches.get_one::<u16>("port").cloned(),
+            ))),
         },
         _ => Cli { command: None },
     }

@@ -1,7 +1,7 @@
 use which::which;
 
 /// SGDKドキュメントの表示
-pub fn show_sgdk_doc_status() {
+pub fn run() {
     let config_dir = dirs::config_dir().unwrap().join("sgdktool");
     let sgdk_path = config_dir.join("SGDK");
     let out_html = sgdk_path.join("doc").join("html");
