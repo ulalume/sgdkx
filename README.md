@@ -146,7 +146,7 @@ blastem Path: Not installed
 
 - [SGDK (by Stephane-D)](https://github.com/Stephane-D/SGDK)
 - [SGDK_wine (by Franticware)](https://github.com/Franticware/SGDK_wine)
-- [jgenesis](https://github.com/jsgroth/jgenesis)
+- [jgenesis (by James Groth)](https://github.com/jsgroth/jgenesis)
 
 Special thanks to these excellent projects.
 

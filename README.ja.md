@@ -62,11 +62,11 @@ brew install doxygen # options
   `--project` でプロジェクトディレクトリ（省略時はカレントディレクトリ）、追加オプションで make に渡す引数を指定できます。
 
 - `sgdktool run [--emulator gens|blastem] [--rom パス]`
-  エミュレータで ROM ファイルを実行します。
+  エミュレータで ROM ファイルを実行します。<br>
   `--emulator` でエミュレータ（gens または blastem）、`--rom` で ROM ファイルのパスを指定できます（どちらも省略可能、デフォルトは自動検出/`out/rom.bin`）。
 
 - `sgdktool uninstall [--config-only]`
-  SGDK のアンインストールと設定ファイルの削除を行います。
+  SGDK のアンインストールと設定ファイルの削除を行います。<br>
   また、`setup-emu` でインストールしたエミュレータ（gens/blastem）も、config.toml に記載されたパスを参照して削除されます。
 
 - `sgdktool doc`
@@ -77,14 +77,14 @@ brew install doxygen # options
 #### 実験的な機能
 
 - `sgdktool web-export [--rom <パス>] [--dir <親ディレクトリ>]`
-  **【実験的】** ROMファイルとWebエミュレータ用テンプレートをエクスポートします。  
-  このコマンドはWebエミュレータのテンプレート（HTML/JS/WASM）とROMを指定ディレクトリ配下の `web-export` ディレクトリにコピーします。  
+  **【実験的】** ROMファイルとWebエミュレータ用テンプレートをエクスポートします。<br>
+  このコマンドはWebエミュレータのテンプレート（HTML/JS/WASM）とROMを指定ディレクトリ配下の `web-export` ディレクトリにコピーします。<br>
   生成されたディレクトリをWebサーバで公開することで、ブラウザ上でゲームを動かせます。
 
 - `sgdktool web-server [--dir <ディレクトリ>] [--port <ポート>]`
-  **【実験的】** `web-export` ディレクトリを組み込みHTTPサーバで公開します（WASM対応のCOOP/COEPヘッダ付き）。  
-  デフォルトでは `web-export` ディレクトリを `localhost:8080` で公開します。  
-  ディレクトリやポートはオプションで変更できます。  
+  **【実験的】** `web-export` ディレクトリを組み込みHTTPサーバで公開します（WASM対応のCOOP/COEPヘッダ付き）。<br>
+  デフォルトでは `web-export` ディレクトリを `localhost:8080` で公開します。<br>
+  ディレクトリやポートはオプションで変更できます。<br>
   例: `sgdktool web-server --dir web-export --port 9000`
 
 ### 簡単な使い方例
@@ -145,7 +145,7 @@ blastem パス: 未インストール
 
 - [SGDK (by Stephane-D)](https://github.com/Stephane-D/SGDK)
 - [SGDK_wine (by Franticware)](https://github.com/Franticware/SGDK_wine)
-- [jgenesis](https://github.com/jsgroth/jgenesis)
+- [jgenesis (by James Groth)](https://github.com/jsgroth/jgenesis)
 
 これらの素晴らしいプロジェクトに感謝します。
 
