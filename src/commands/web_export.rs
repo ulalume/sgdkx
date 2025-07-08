@@ -69,5 +69,5 @@ pub fn run(args: &Args) {
 
     println!("✅ Web export complete!");
     println!("  Output directory: {}", out_path.display());
-    println!("  Open {}/index.html in your browser.", out_path.display());
+    println!("  Run sgdktool web-server");
 }

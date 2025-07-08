@@ -5,6 +5,7 @@ use commands::doc;
 use commands::doctor;
 use commands::make;
 use commands::new;
+use commands::open;
 use commands::run;
 use commands::setup;
 use commands::setup_emu;
@@ -18,7 +19,7 @@ rust_i18n::i18n!("locales");
 /// A CLI tool for SGDK-based development
 #[derive(Parser)]
 #[command(name = "sgdktool")]
-#[command(version = "0.1.0")]
+#[command(version = "0.1.1")]
 struct Cli {
     #[command(subcommand)]
     command: Option<Commands>,
@@ -52,6 +53,9 @@ enum Commands {
 
     /// Serve web-export directory with HTTP server (with COOP/COEP headers)
     WebServer(web_server::Args),
+
+    /// Open SGDK installation directory
+    Open(open::Args),
 }
 
 fn main() {
@@ -89,6 +93,9 @@ fn main() {
             }
             Commands::WebServer(args) => {
                 web_server::run(args);
+            }
+            Commands::Open(args) => {
+                open::run(args);
             }
         },
         None => {
@@ -153,6 +160,14 @@ fn create_localized_cli() -> Cli {
                     "SGDKドキュメントの生成状況を表示"
                 } else {
                     "Show SGDK documentation status"
+                }),
+        )
+        .subcommand(
+            Command::new("open")
+                .about(if is_japanese {
+                    "SGDKインストールディレクトリを開く"
+                } else {
+                    "Open SGDK installation directory"
                 }),
         )
         .subcommand(
@@ -318,7 +333,6 @@ fn create_localized_cli() -> Cli {
     match matches.subcommand() {
         Some(("setup", sub_matches)) => Cli {
             command: Some(Commands::Setup(setup::Args::new(
-                sub_matches.get_one::<String>("dir").cloned(),
                 sub_matches.get_one::<String>("version").unwrap().clone(),
             ))),
         },
@@ -339,7 +353,6 @@ fn create_localized_cli() -> Cli {
         Some(("setup-emu", sub_matches)) => Cli {
             command: Some(Commands::SetupEmu(setup_emu::Args::new(
                 sub_matches.get_one::<String>("emulator").unwrap().clone(),
-                sub_matches.get_one::<String>("dir").cloned(),
             ))),
         },
         Some(("run", sub_matches)) => Cli {
@@ -356,8 +369,8 @@ fn create_localized_cli() -> Cli {
         },
         Some(("web-export", sub_matches)) => Cli {
             command: Some(Commands::WebExport(web_export::Args::new(
+                sub_matches.get_one::<String>("rom").cloned(),
                 sub_matches.get_one::<String>("dir").cloned(),
-                sub_matches.get_one::<String>("output").cloned(),
             ))),
         },
         Some(("web-server", sub_matches)) => Cli {
@@ -365,6 +378,9 @@ fn create_localized_cli() -> Cli {
                 sub_matches.get_one::<String>("dir").cloned(),
                 sub_matches.get_one::<u16>("port").cloned(),
             ))),
+        },
+        Some(("open", _sub_matches)) => Cli {
+            command: Some(Commands::Open(open::Args {})),
         },
         _ => Cli { command: None },
     }

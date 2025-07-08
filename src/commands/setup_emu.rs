@@ -4,7 +4,7 @@ use reqwest::blocking::get;
 use sevenz_rust;
 use std::fs;
 use std::io::copy as io_copy;
-use std::path::{Path, PathBuf};
+use std::path::Path;
 use tempfile::NamedTempFile;
 use toml_edit::{DocumentMut, value};
 use zip::ZipArchive;
@@ -14,34 +14,21 @@ pub struct Args {
     /// Emulator to setup (gens or blastem)
     #[arg(default_value = "gens")]
     emulator: String,
-
-    /// Directory to install emulator (defaults to config directory)
-    #[arg(long)]
-    dir: Option<String>,
 }
 
 impl Args {
-    pub fn new(emulator: String, dir: Option<String>) -> Self {
-        Self {
-            emulator: emulator,
-            dir,
-        }
+    pub fn new(emulator: String) -> Self {
+        Self { emulator: emulator }
     }
 }
 
 pub fn run(args: &Args) {
     let emulator = &args.emulator;
-    let dir = &args.dir;
 
     let config_dir = config_dir()
         .expect("Unable to determine config directory")
         .join("sgdktool");
-    let install_dir = if let Some(dir) = dir {
-        PathBuf::from(dir)
-    } else {
-        config_dir.join(emulator.as_str())
-    };
-
+    let install_dir = config_dir.join(emulator.as_str());
     if !install_dir.exists() {
         fs::create_dir_all(&install_dir).expect("Failed to create install directory");
     }

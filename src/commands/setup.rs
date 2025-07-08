@@ -1,7 +1,7 @@
 use clap::Parser;
 use dirs::config_dir;
 use std::fs;
-use std::path::{Path, PathBuf};
+use std::path::Path;
 use std::process::Command;
 use toml_edit::{DocumentMut, value};
 use which::which;
@@ -11,51 +11,28 @@ use rust_i18n;
 
 #[derive(Parser)]
 pub struct Args {
-    /// Directory to clone SGDK into (defaults to config directory)
-    #[arg(long)]
-    dir: Option<String>,
-
     /// Branch, tag, or commit ID to clone (defaults to master)
     #[arg(long, default_value = "master")]
     version: String,
 }
 
 impl Args {
-    pub fn new(dir: Option<String>, version: String) -> Self {
-        Self { dir, version }
+    pub fn new(version: String) -> Self {
+        Self { version }
     }
 }
 
 pub fn run(args: &Args) {
-    let dir = &args.dir;
     let version: &str = &args.version;
     if which("git").is_err() {
         eprintln!("{}", rust_i18n::t!("git_not_found"));
         std::process::exit(1);
     }
+    let target_dir = config_dir()
+        .expect("Failed to get config directory")
+        .join("sgdktool")
+        .join("SGDK");
 
-    let target_dir = if let Some(custom_dir) = dir {
-        PathBuf::from(custom_dir)
-    } else {
-        config_dir()
-            .expect("Failed to get config directory")
-            .join("sgdktool")
-            .join("SGDK")
-    };
-
-    if dir.is_none() {
-        if rust_i18n::locale().to_string() == "ja" {
-            println!(
-                "📁 デフォルト設定ディレクトリを使用: {}",
-                target_dir.display()
-            );
-        } else {
-            println!(
-                "📁 Using default config directory: {}",
-                target_dir.display()
-            );
-        }
-    }
     if target_dir.exists() {
         // 上書き確認プロンプト
         println!("{}", rust_i18n::t!("sgdk_exists_overwrite_prompt"));
