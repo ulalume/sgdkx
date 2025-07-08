@@ -1,0 +1,13 @@
+CompileFlags:
+  Add:
+    - '-DSGDK_GCC'
+    - '-include'
+    - 'types.h'
+  Remove:
+    - '-ffat-lto-objects'
+    - '-externally_visible'
+    - '-f*'
+    - '-m68000'
+Diagnostics:
+  Suppress:
+    - main_arg_wrong

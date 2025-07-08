@@ -1,0 +1,11 @@
+{
+    "configurations": [
+      {
+        "name": "sgdk",
+        "cStandard": "c23",
+        "intelliSenseMode": "gcc-x64",
+        "compileCommands": "${workspaceFolder}/compile_commands.json"
+      }
+    ],
+    "version": 4
+}

@@ -6,6 +6,7 @@ pub mod open;
 pub mod run;
 pub mod setup;
 pub mod setup_emu;
+pub mod setup_web;
 pub mod uninstall;
 pub mod web_export;
 pub mod web_server;

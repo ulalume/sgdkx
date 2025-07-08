@@ -1,12 +1,10 @@
 use clap::Parser;
-use rust_embed::RustEmbed;
 use std::fs;
-use std::path::Path;
+use std::path::{Path, PathBuf};
+use toml_edit::DocumentMut;
 
-/// RustEmbedでassets/web-templateを埋め込む
-#[derive(RustEmbed)]
-#[folder = "assets/web-template-v0.0.1"]
-struct WebTemplate;
+// Import constants from setup_web
+use crate::commands::setup_web::SGDKTOOL_CONFIG_DIR_NAME;
 
 #[derive(Parser)]
 pub struct Args {
@@ -46,21 +44,19 @@ pub fn run(args: &Args) {
         fs::create_dir_all(&out_path).expect("Failed to create output directory");
     }
 
-    // 埋め込んだテンプレートファイルを展開
-    for file in WebTemplate::iter() {
-        let file_str = file.as_ref();
-        // .d.tsファイルは除外
-        if file_str.ends_with(".d.ts") {
-            continue;
+    // テンプレートの場所を確認
+    let template_dir = get_template_directory();
+
+    // テンプレートディレクトリが存在しない場合、setup-webを促す
+    match template_dir {
+        Some(template_dir) => {
+            println!("Using web template from: {}", template_dir.display());
+            copy_directory(&template_dir, &out_path).expect("Failed to copy template files");
         }
-        let data = WebTemplate::get(file_str).unwrap();
-        let dest_path = out_path.join(file_str);
-        if let Some(parent) = dest_path.parent() {
-            if !parent.exists() {
-                fs::create_dir_all(parent).expect("Failed to create template subdirectory");
-            }
+        None => {
+            eprintln!("❌ Web template not found. Please run `sgdktool setup-web` first.");
+            std::process::exit(1);
         }
-        fs::write(&dest_path, data.data).expect("Failed to write template file");
     }
 
     // ROMファイルをコピー
@@ -70,4 +66,57 @@ pub fn run(args: &Args) {
     println!("✅ Web export complete!");
     println!("  Output directory: {}", out_path.display());
     println!("  Run sgdktool web-server");
+}
+
+// テンプレートディレクトリを取得する関数
+fn get_template_directory() -> Option<PathBuf> {
+    let config_path = dirs::config_dir()
+        .expect("Failed to get config directory")
+        .join(SGDKTOOL_CONFIG_DIR_NAME)
+        .join("config.toml");
+
+    if config_path.exists() {
+        let config_str = match fs::read_to_string(&config_path) {
+            Ok(s) => s,
+            Err(_) => return None,
+        };
+
+        let doc = match config_str.parse::<DocumentMut>() {
+            Ok(d) => d,
+            Err(_) => return None,
+        };
+
+        // config.tomlからテンプレートパスを取得
+        if let Some(web_export) = doc.get("web_export") {
+            if let Some(path_value) = web_export.get("template_path").and_then(|v| v.as_str()) {
+                let template_dir = PathBuf::from(path_value);
+                if template_dir.exists() {
+                    return Some(template_dir);
+                }
+            }
+        }
+    }
+
+    None
+}
+
+// ディレクトリ全体をコピーする関数
+fn copy_directory(src: &Path, dst: &Path) -> std::io::Result<()> {
+    if !dst.exists() {
+        fs::create_dir_all(dst)?;
+    }
+
+    for entry in fs::read_dir(src)? {
+        let entry = entry?;
+        let src_path = entry.path();
+        let dst_path = dst.join(entry.file_name());
+
+        if src_path.is_dir() {
+            copy_directory(&src_path, &dst_path)?;
+        } else {
+            fs::copy(&src_path, &dst_path)?;
+        }
+    }
+
+    Ok(())
 }

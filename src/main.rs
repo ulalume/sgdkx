@@ -9,6 +9,7 @@ use commands::open;
 use commands::run;
 use commands::setup;
 use commands::setup_emu;
+use commands::setup_web;
 use commands::uninstall;
 use commands::web_export;
 use commands::web_server;
@@ -56,6 +57,9 @@ enum Commands {
 
     /// Open SGDK installation directory
     Open(open::Args),
+
+    /// Setup web export template
+    SetupWeb(setup_web::Args),
 }
 
 fn main() {
@@ -96,6 +100,9 @@ fn main() {
             }
             Commands::Open(args) => {
                 open::run(args);
+            }
+            Commands::SetupWeb(args) => {
+                setup_web::run(args);
             }
         },
         None => {
@@ -168,6 +175,14 @@ fn create_localized_cli() -> Cli {
                     "SGDKインストールディレクトリを開く"
                 } else {
                     "Open SGDK installation directory"
+                }),
+        )
+        .subcommand(
+            Command::new("setup-web")
+                .about(if is_japanese {
+                    "Webエクスポートテンプレートをセットアップ"
+                } else {
+                    "Setup web export template"
                 }),
         )
         .subcommand(
@@ -381,6 +396,9 @@ fn create_localized_cli() -> Cli {
         },
         Some(("open", _sub_matches)) => Cli {
             command: Some(Commands::Open(open::Args {})),
+        },
+        Some(("setup-web", _sub_matches)) => Cli {
+            command: Some(Commands::SetupWeb(setup_web::Args {})),
         },
         _ => Cli { command: None },
     }
