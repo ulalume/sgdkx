@@ -1,9 +1,10 @@
+use crate::path;
 use which::which;
 
 /// SGDKドキュメントの表示
 pub fn run() {
-    let config_dir = dirs::config_dir().unwrap().join("sgdktool");
-    let sgdk_path = config_dir.join("SGDK");
+    // config_dirがResultを返すので、unwrap_or_elseでエラー時のデフォルト値を設定
+    let sgdk_path = path::config_dir().join("SGDK");
     let out_html = sgdk_path.join("doc").join("html");
     let index_html = out_html.join("index.html");
 

@@ -1,12 +1,11 @@
+use crate::commands::new::escape_path;
+use crate::path;
 use clap::Parser;
-use dirs::config_dir;
 use rust_i18n;
 use std::fs;
 use std::path::Path;
 use std::process::Command;
 use toml_edit::DocumentMut;
-
-use crate::commands::new::escape_path;
 
 #[derive(Parser)]
 pub struct Args {
@@ -28,7 +27,7 @@ pub fn run(args: &Args) {
         std::process::exit(1);
     }
 
-    let config_path = config_dir().unwrap().join("sgdktool/config.toml");
+    let config_path = path::config_dir().join("config.toml");
     let doc = fs::read_to_string(&config_path)
         .unwrap()
         .parse::<DocumentMut>()

@@ -1,6 +1,7 @@
 use clap::{Parser, Subcommand};
 
 mod commands;
+mod path;
 use commands::doc;
 use commands::doctor;
 use commands::make;

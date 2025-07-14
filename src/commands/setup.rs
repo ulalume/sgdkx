@@ -1,5 +1,5 @@
+use crate::path;
 use clap::Parser;
-use dirs::config_dir;
 use std::fs;
 use std::path::Path;
 use std::process::Command;
@@ -28,10 +28,7 @@ pub fn run(args: &Args) {
         eprintln!("{}", rust_i18n::t!("git_not_found"));
         std::process::exit(1);
     }
-    let target_dir = config_dir()
-        .expect("Failed to get config directory")
-        .join("sgdktool")
-        .join("SGDK");
+    let target_dir = path::config_dir().join("SGDK");
 
     if target_dir.exists() {
         // 上書き確認プロンプト
@@ -82,9 +79,7 @@ pub fn run(args: &Args) {
 
         // config.toml更新
         println!("{}", rust_i18n::t!("sgdk_config_updating"));
-        let config_dir = config_dir()
-            .expect("Failed to get config directory")
-            .join("sgdktool");
+        let config_dir = path::config_dir();
         fs::create_dir_all(&config_dir).expect("Failed to create config directory");
         let config_path = config_dir.join("config.toml");
 
@@ -170,9 +165,7 @@ pub fn run(args: &Args) {
     }
 
     println!("{}", rust_i18n::t!("saving_config"));
-    let config_dir = config_dir()
-        .expect("Failed to get config directory")
-        .join("sgdktool");
+    let config_dir = path::config_dir();
     fs::create_dir_all(&config_dir).expect("Failed to create config directory");
     let config_path = config_dir.join("config.toml");
 

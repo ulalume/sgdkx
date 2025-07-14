@@ -1,4 +1,4 @@
-use dirs::config_dir;
+use crate::path;
 use std::fs;
 use std::path::{Path, PathBuf};
 use std::process::Command;
@@ -19,7 +19,7 @@ pub fn run() {
     #[cfg(not(target_os = "windows"))]
     check_tool("wine");
 
-    let config_path = config_dir().unwrap().join("sgdktool").join("config.toml");
+    let config_path = path::config_dir().join("config.toml");
 
     if config_path.exists() {
         let text = fs::read_to_string(&config_path).unwrap();
@@ -51,7 +51,7 @@ pub fn run() {
         println!("{}", rust_i18n::t!("commit_id", commit = commit.trim()));
 
         // === Gens/Blastem Path Info 追加 ===
-        let config_base = config_dir().unwrap().join("sgdktool");
+        let config_base = path::config_dir();
 
         // Gens
         let gens_path_config = doc

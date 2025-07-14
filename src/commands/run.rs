@@ -1,5 +1,5 @@
+use crate::path;
 use clap::Parser;
-use dirs::config_dir;
 use std::fs;
 use std::path::{Path, PathBuf};
 use std::process::Command;
@@ -25,9 +25,7 @@ impl Args {
 }
 
 pub fn run(args: &Args) {
-    let config_dir = config_dir()
-        .expect("Unable to determine config directory")
-        .join("sgdktool");
+    let config_dir = path::config_dir();
 
     let rom_path = &args.rom;
     let emulator = &args.emulator;

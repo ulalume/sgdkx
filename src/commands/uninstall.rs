@@ -1,13 +1,11 @@
-use dirs::config_dir;
+use crate::path;
 use rust_i18n;
 use std::fs;
 use std::path::Path;
 use toml_edit::DocumentMut;
 
 pub fn run() {
-    let config_dir = config_dir()
-        .expect("Failed to get config directory")
-        .join("sgdktool");
+    let config_dir = path::config_dir();
 
     let config_path = config_dir.join("config.toml");
 

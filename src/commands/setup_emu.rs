@@ -1,5 +1,5 @@
+use crate::path;
 use clap::Parser;
-use dirs::config_dir;
 use reqwest::blocking::get;
 use sevenz_rust;
 use std::fs;
@@ -25,9 +25,7 @@ impl Args {
 pub fn run(args: &Args) {
     let emulator = &args.emulator;
 
-    let config_dir = config_dir()
-        .expect("Unable to determine config directory")
-        .join("sgdktool");
+    let config_dir = path::config_dir();
     let install_dir = config_dir.join(emulator.as_str());
     if !install_dir.exists() {
         fs::create_dir_all(&install_dir).expect("Failed to create install directory");
