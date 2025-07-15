@@ -43,10 +43,9 @@ Main commands:
 
 - `sgdktool setup [--version <version>]` <br>
   Download and install SGDK (Sega Genesis Development Kit).<br>
-  You can specify the installation directory with `--dir` (default: config directory), and the version with `--version` (default: master).<br>
+  You can specify the version with `--version` (default: master).<br>
   The `--version` option accepts a branch name, tag, or commit ID.<br>
   Examples:<br>
-
   - `--version V2.11` for tag V2.11
   - `--version ef9292c0` for commit ID ef9292c0
     The SGDK path and version are saved in config.toml.<br>
@@ -54,7 +53,6 @@ Main commands:
 
 - `sgdktool setup-emu [gens|blastem]`<br>
   Download and install an emulator (Gens or BlastEm).<br>
-  You can specify the installation directory with `--dir` (default: config directory).<br>
   The path to the emulator is saved in config.toml.
 
 - `sgdktool new <project_name>`<br>

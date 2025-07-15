@@ -41,9 +41,8 @@ brew install doxygen # options
 
 - `sgdktool setup [--version バージョン]`<br>
   SGDK（Sega Genesis Development Kit）をダウンロード・インストールします。<br>
-  `--dir` でインストール先ディレクトリ（省略時は設定ディレクトリ）、`--version` でブランチ名・タグ名・コミット ID（省略時は master）を指定できます。<br>
+  `--version` でブランチ名・タグ名・コミット ID（省略時は master）を指定できます。<br>
   例:
-
   - `--version V2.11` でタグ V2.11
   - `--version ef9292c0` でコミット ID ef9292c0<br>
     SGDK のパスやバージョンは config.toml に保存されます。<br>
@@ -51,7 +50,6 @@ brew install doxygen # options
 
 - `sgdktool setup-emu [gens|blastem]`<br>
   エミュレータ（gens または blastem）をダウンロード・セットアップします。<br>
-  `--dir` でインストール先を指定できます（省略時はデフォルトの設定ディレクトリ）。<br>
   インストールしたエミュレータのパスは config.toml に保存されます。
 
 - `sgdktool new <プロジェクト名>`<br>
