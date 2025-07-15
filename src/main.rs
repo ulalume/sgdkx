@@ -4,7 +4,6 @@ mod commands;
 mod path;
 use commands::doc;
 use commands::doctor;
-use commands::make;
 use commands::new;
 use commands::open;
 use commands::run;
@@ -41,8 +40,6 @@ enum Commands {
     /// Create a new SGDK project
     New(new::Args),
 
-    /// Build project using make
-    Make(make::Args),
     /// Run ROM file with emulator
     Run(run::Args),
 
@@ -76,9 +73,6 @@ fn main() {
             }
             Commands::New(args) => {
                 new::run(&args);
-            }
-            Commands::Make(args) => {
-                make::run(&args);
             }
             Commands::Run(args) => {
                 run::run(args);

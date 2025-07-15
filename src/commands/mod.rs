@@ -1,6 +1,5 @@
 pub mod doc;
 pub mod doctor;
-pub mod make;
 pub mod new;
 pub mod open;
 pub mod run;
