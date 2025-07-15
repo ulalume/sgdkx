@@ -11,12 +11,6 @@ pub struct Args {
     name: String,
 }
 
-impl Args {
-    pub fn new(name: String) -> Self {
-        Self { name }
-    }
-}
-
 /// シェル用にパスをエスケープする
 pub fn escape_path(path: &str) -> String {
     // エスケープが必要な特殊文字のリスト

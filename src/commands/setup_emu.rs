@@ -16,12 +16,6 @@ pub struct Args {
     emulator: String,
 }
 
-impl Args {
-    pub fn new(emulator: String) -> Self {
-        Self { emulator: emulator }
-    }
-}
-
 pub fn run(args: &Args) {
     let emulator = &args.emulator;
 

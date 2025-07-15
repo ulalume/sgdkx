@@ -16,12 +16,6 @@ pub struct Args {
     version: String,
 }
 
-impl Args {
-    pub fn new(version: String) -> Self {
-        Self { version }
-    }
-}
-
 pub fn run(args: &Args) {
     let version: &str = &args.version;
     if which("git").is_err() {

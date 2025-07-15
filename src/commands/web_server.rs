@@ -19,14 +19,6 @@ pub struct Args {
     #[arg(long, default_value = "8080")]
     port: u16,
 }
-impl Args {
-    pub fn new(dir: Option<String>, port: Option<u16>) -> Self {
-        Self {
-            dir: dir.unwrap_or_else(|| DEFAULT_DIR.to_string()),
-            port: port.unwrap_or(8080),
-        }
-    }
-}
 
 /// web_serverコマンド本体
 pub fn run(args: &Args) {

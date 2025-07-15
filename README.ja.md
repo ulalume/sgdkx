@@ -39,7 +39,7 @@ brew install doxygen # options
 - `sgdktool`<br>
   環境チェック・SGDK やエミュレータの設定状況・ヘルプを表示します。
 
-- `sgdktool setup [--dir パス] [--version バージョン]`<br>
+- `sgdktool setup [--version バージョン]`<br>
   SGDK（Sega Genesis Development Kit）をダウンロード・インストールします。<br>
   `--dir` でインストール先ディレクトリ（省略時は設定ディレクトリ）、`--version` でブランチ名・タグ名・コミット ID（省略時は master）を指定できます。<br>
   例:
@@ -49,17 +49,13 @@ brew install doxygen # options
     SGDK のパスやバージョンは config.toml に保存されます。<br>
     さらに、**doxygen がインストールされていて SGDK ドキュメントが存在しない場合は、自動的にドキュメントを生成します。**
 
-- `sgdktool setup-emu [gens|blastem] [--dir パス]`<br>
+- `sgdktool setup-emu [gens|blastem]`<br>
   エミュレータ（gens または blastem）をダウンロード・セットアップします。<br>
   `--dir` でインストール先を指定できます（省略時はデフォルトの設定ディレクトリ）。<br>
   インストールしたエミュレータのパスは config.toml に保存されます。
 
 - `sgdktool new <プロジェクト名>`<br>
   SGDK サンプルから新しいプロジェクトを作成します。<br>
-
-- `sgdktool make [--project ディレクトリ] [追加オプション...]`<br>
-  `make` を使って SGDK プロジェクトをビルドします。<br>
-  `--project` でプロジェクトディレクトリ（省略時はカレントディレクトリ）、追加オプションで make に渡す引数を指定できます。
 
 - `sgdktool run [--emulator gens|blastem] [--rom パス]`
   エミュレータで ROM ファイルを実行します。<br>
@@ -94,34 +90,35 @@ sgdktool setup --version v2.11 # stable
 sgdktool setup-emu
 sgdktool new your_project
 cd your_project
-sgdktool make
+make
 sgdktool run
 ```
 
 ### 参考: コマンドなしで実行した場合の出力例
 
 ```
-SGDKサポートCLIツール
+A CLI tool for SGDK-based development
 
 Usage: sgdktool [COMMAND]
 
 Commands:
-  setup       SGDKをセットアップ（クローンとパス登録）
-  setup-emu   ROMファイル実行用のエミュレータをセットアップ
-  new         SGDKサンプルから新しいプロジェクトを作成
-  make        makeを使ってプロジェクトをビルド
-  run         エミュレータでROMファイルを実行
-  doc         SGDKドキュメントが存在すれば開く
-  web-export  ROMとWebエミュレータテンプレートをエクスポート
-  web-server  web-exportディレクトリをHTTPサーバで公開（COOP/COEPヘッダ付き）
-  uninstall   SGDKインストールと設定をアンインストール
+  setup       Setup SGDK for development
+  doc         Show SGDK documentation status
+  setup-emu   Setup emulator for running ROM files
+  new         Create a new SGDK project
+  run         Run ROM file with emulator
+  uninstall   Uninstall SGDK installation and configuration
+  web-export  Export ROM and web emulator template for web deployment
+  web-server  Serve web-export directory with HTTP server (with COOP/COEP headers)
+  open        Open SGDK installation directory
+  setup-web   Setup web export template
   help        Print this message or the help of the given subcommand(s)
 
 Options:
   -h, --help     Print help
   -V, --version  Print version
 
-🩺 SGDKTool 環境チェック
+🩺 SGDKTool Environment Check
 ✅ git: /opt/homebrew/bin/git
 ✅ make: /usr/bin/make
 ✅ java: /opt/homebrew/opt/openjdk/bin/java
@@ -129,14 +126,14 @@ Options:
 ✅ doxygen: /opt/homebrew/bin/doxygen
 ✅ wine: /opt/homebrew/bin/wine
 
-📝 SGDKToolの設定ファイル: /Users/[user]/Library/Application Support/sgdktool/config.toml
-SGDK パス   : /Users/[user]/Library/Application Support/sgdktool/SGDK
-バージョン  : master
-コミット ID : 2c27b80443db8ad7e803cf2eb919b2122d458fae
-Gens パス   : 未インストール
-blastem パス: 未インストール
+📝 SGDKTool Configuration: /Users/[user]/.sgdktool/data/config.toml
+SGDK Path   : /Users/[user]/.sgdktool/data/SGDK
+Version     : v2.11
+Commit ID   : ef9292c03fe33a2f8af3a2589ab856a53dcef35c
+Gens Path   : /Users/[user]/.sgdktool/data/gens/gens.exe
+blastem Path: Not installed
 
-📄 SGDKドキュメント: /Users/[user]/Library/Application Support/sgdktool/SGDK/doc/html/index.html
+📄 SGDK documentation: /Users/[user]/.sgdktool/data/SGDK/doc/html/index.html
 ```
 
 ---

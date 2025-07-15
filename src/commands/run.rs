@@ -15,14 +15,6 @@ pub struct Args {
     #[arg(long, default_value = "out/rom.bin")]
     rom: String,
 }
-impl Args {
-    pub fn new(emulator: Option<String>, rom: Option<String>) -> Self {
-        Self {
-            emulator: emulator,
-            rom: rom.unwrap_or("out/rom.bin".to_string()),
-        }
-    }
-}
 
 pub fn run(args: &Args) {
     let config_dir = path::config_dir();

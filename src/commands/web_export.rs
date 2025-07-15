@@ -16,15 +16,6 @@ pub struct Args {
     dir: String,
 }
 
-impl Args {
-    pub fn new(rom: Option<String>, dir: Option<String>) -> Self {
-        Self {
-            rom: rom.unwrap_or("out/rom.bin".to_string()),
-            dir: dir.unwrap_or(".".to_string()),
-        }
-    }
-}
-
 /// web-exportコマンド本体
 pub fn run(args: &Args) {
     // ROMファイルのパス

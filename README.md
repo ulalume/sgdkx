@@ -41,7 +41,7 @@ Main commands:
 - `sgdktool`<br>
   Show environment check, SGDK/emulator configuration, and help message.
 
-- `sgdktool setup [--dir <path>] [--version <version>]` <br>
+- `sgdktool setup [--version <version>]` <br>
   Download and install SGDK (Sega Genesis Development Kit).<br>
   You can specify the installation directory with `--dir` (default: config directory), and the version with `--version` (default: master).<br>
   The `--version` option accepts a branch name, tag, or commit ID.<br>
@@ -52,17 +52,13 @@ Main commands:
     The SGDK path and version are saved in config.toml.<br>
     Additionally, **if doxygen is installed and SGDK documentation does not exist, documentation will be generated automatically.**
 
-- `sgdktool setup-emu [gens|blastem] [--dir <path>]`<br>
+- `sgdktool setup-emu [gens|blastem]`<br>
   Download and install an emulator (Gens or BlastEm).<br>
   You can specify the installation directory with `--dir` (default: config directory).<br>
   The path to the emulator is saved in config.toml.
 
 - `sgdktool new <project_name>`<br>
   Create a new project from the SGDK sample.
-
-- `sgdktool make [--project <dir>] [<extra options>...]`<br>
-  Build the SGDK project using `make`.<br>
-  You can specify the project directory with `--project` (default: current directory), and pass extra options to `make`.
 
 - `sgdktool run [--emulator <gens|blastem>] [--rom <path>]`<br>
   Run the ROM file with the specified emulator (default: gens or installed emulator).<br>
@@ -95,7 +91,7 @@ sgdktool setup --version v2.11 # stable
 sgdktool setup-emu
 sgdktool new your_project
 cd your_project
-sgdktool make
+make
 sgdktool run
 ```
 
@@ -107,15 +103,16 @@ A CLI tool for SGDK-based development
 Usage: sgdktool [COMMAND]
 
 Commands:
-  setup       Setup SGDK (clone and register path)
+  setup       Setup SGDK for development
+  doc         Show SGDK documentation status
   setup-emu   Setup emulator for running ROM files
-  new         Create new project from SGDK sample
-  make        Build project using make
+  new         Create a new SGDK project
   run         Run ROM file with emulator
-  doc         If SGDK documentation exists, it will be opened in your browser
   uninstall   Uninstall SGDK installation and configuration
   web-export  Export ROM and web emulator template for web deployment
   web-server  Serve web-export directory with HTTP server (with COOP/COEP headers)
+  open        Open SGDK installation directory
+  setup-web   Setup web export template
   help        Print this message or the help of the given subcommand(s)
 
 Options:
@@ -130,14 +127,14 @@ Options:
 ✅ doxygen: /opt/homebrew/bin/doxygen
 ✅ wine: /opt/homebrew/bin/wine
 
-📝 SGDKTool Configuration: /Users/[user]/Library/Application Support/sgdktool/config.toml
-SGDK Path   : /Users/[user]/Library/Application Support/sgdktool/SGDK
-Version     : master
-Commit ID   : 2c27b80443db8ad7e803cf2eb919b2122d458fae
-Gens Path   : Not installed
+📝 SGDKTool Configuration: /Users/[user]/.sgdktool/data/config.toml
+SGDK Path   : /Users/[user]/.sgdktool/data/SGDK
+Version     : v2.11
+Commit ID   : ef9292c03fe33a2f8af3a2589ab856a53dcef35c
+Gens Path   : /Users/[user]/.sgdktool/data/gens/gens.exe
 blastem Path: Not installed
 
-📄 SGDK documentation: /Users/[user]/Library/Application Support/sgdktool/SGDK/doc/html/index.html
+📄 SGDK documentation: /Users/[user]/.sgdktool/data/SGDK/doc/html/index.html
 ```
 
 ---

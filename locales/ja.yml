@@ -41,7 +41,6 @@ sgdk_wine_complete: "✅ SGDK_wine設定完了！生成されたファイル数:
 build_example: "   プロジェクトのビルド例:"
 makefile_not_found: "⚠️  makefile.genが見つかりません: %{path}"
 app_about: "SGDKサポートCLIツール"
-setup_about: "SGDKをセットアップ（クローンとパス登録）"
 setup_dir_help: "SGDKをクローンするディレクトリ（省略時は設定ディレクトリ）"
 new_about: "SGDKテンプレートから新しいプロジェクトを作成"
 new_name_help: "プロジェクト名（ディレクトリとして作成されます）"
