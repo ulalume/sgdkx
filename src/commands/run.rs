@@ -3,6 +3,7 @@ use clap::Parser;
 use std::fs;
 use std::path::{Path, PathBuf};
 use std::process::Command;
+#[cfg(not(target_os = "windows"))]
 use which::which;
 
 #[derive(Parser)]
