@@ -48,12 +48,6 @@ pub fn run(args: &Args) {
 
     println!("{}", rust_i18n::t!("project_created", name = name));
 
-    // Check for compiledb and run it if available
-    println!("{}", rust_i18n::t!("compiledb_check"));
-    if check_compiledb_available() {
-        run_compiledb_make(&dest_path, &sgdk_path);
-    }
-
     // Create .clangd configuration file
     create_clangd_config(&dest_path);
 
@@ -65,6 +59,12 @@ pub fn run(args: &Args) {
 
     // Create platform-specific Makefile
     create_makefile(&dest_path, &sgdk_path);
+
+    // Check for compiledb and run it if available
+    println!("{}", rust_i18n::t!("compiledb_check"));
+    if check_compiledb_available() {
+        run_compiledb_make(&dest_path);
+    }
 }
 
 /// sample配下をdialoguerで辿ってテンプレート選択。srcがあれば確定。デフォルトはsample/basics/hello-world。
@@ -150,31 +150,11 @@ pub fn get_sgdk_config(doc: &DocumentMut) -> (Option<&str>, Option<&str>) {
     (path, version)
 }
 
-pub fn run_compiledb_make(project_path: &Path, sgdk_path: &Path) -> bool {
+pub fn run_compiledb_make(project_path: &Path) -> bool {
     println!("{}", rust_i18n::t!("running_compiledb"));
-
-    #[cfg(target_os = "windows")]
-    let sgdk_path_str_unix = {
-        let unix = sgdk_path.to_string_lossy().to_string().replace("\\", "/");
-        if unix.starts_with("//?/") {
-            unix.replace("//?/", "")
-        } else {
-            unix
-        }
-    };
-    #[cfg(not(target_os = "windows"))]
-    let sgdk_path_str_unix = sgdk_path.to_string_lossy().to_string();
-
-    #[cfg(target_os = "windows")]
-    let makefile = sgdk_path.join("makefile.gen");
-    #[cfg(not(target_os = "windows"))]
-    let makefile = sgdk_path.join("makefile_wine.gen");
 
     let result = match std::process::Command::new("compiledb")
         .arg("make")
-        .arg(format!("GDK={}", sgdk_path_str_unix))
-        .arg("-f")
-        .arg(&makefile)
         .current_dir(project_path)
         .output()
     {
