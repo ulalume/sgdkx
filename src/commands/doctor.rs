@@ -93,7 +93,15 @@ pub fn run() {
         if doc_index.exists() {
             println!(
                 "\n{}",
-                rust_i18n::t!("sgdk_doc_exists", path = doc_index.display())
+                rust_i18n::t!(
+                    "sgdk_doc_exists",
+                    path = doc_index
+                        .canonicalize()
+                        .expect("Failed to canonicalize path")
+                        .to_str()
+                        .unwrap()
+                        .replace(r"\\?\", "")
+                )
             );
         } else {
             println!("{}", rust_i18n::t!("sgdk_doc_not_found"));

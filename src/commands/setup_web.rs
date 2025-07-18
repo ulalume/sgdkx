@@ -347,7 +347,7 @@ fn download_and_extract_template(
         }
     };
 
-    doc["web_export"]["template_path"] = value(path_str);
+    doc["web_export"]["template_path"] = value(path_str.replace(r"\\?\", ""));
 
     if let Err(e) = fs::write(&config_path, doc.to_string()) {
         eprintln!("❌ Failed to write config file: {}", e);

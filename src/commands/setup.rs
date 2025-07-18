@@ -85,7 +85,7 @@ pub fn run(args: &Args) {
         let abs_path = target_dir
             .canonicalize()
             .expect("Failed to get absolute path");
-        doc["sgdk"]["path"] = value(abs_path.to_str().unwrap());
+        doc["sgdk"]["path"] = value(abs_path.to_str().unwrap().replace(r"\\?\", ""));
         doc["sgdk"]["version"] = value(version);
 
         fs::write(&config_path, doc.to_string()).expect("Failed to write config.toml");
@@ -170,7 +170,7 @@ pub fn run(args: &Args) {
     let abs_path = target_dir
         .canonicalize()
         .expect("Failed to get absolute path");
-    doc["sgdk"]["path"] = value(abs_path.to_str().unwrap());
+    doc["sgdk"]["path"] = value(abs_path.to_str().unwrap().replace(r"\\?\", ""));
     doc["sgdk"]["version"] = value(version);
 
     fs::write(&config_path, doc.to_string()).expect("Failed to write config.toml");
