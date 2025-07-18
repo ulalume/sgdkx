@@ -40,11 +40,8 @@ pub fn run(args: &Args) {
             std::process::exit(0);
         }
 
-        // mac/linuxの場合はワーキングツリーを徹底的にクリーンにする
-        #[cfg(not(target_os = "windows"))]
-        {
-            reset_sgdk_worktree(&target_dir);
-        }
+        reset_sgdk_worktree(&target_dir);
+
         // 既存リポジトリでgit fetch/checkout
         if target_dir.join(".git").exists() {
             let fetch_status = Command::new("git")
@@ -191,7 +188,6 @@ pub fn run(args: &Args) {
     );
 }
 
-#[cfg(not(target_os = "windows"))]
 fn reset_sgdk_worktree(target_dir: &Path) {
     use std::fs;
     // 1. git reset --hard
