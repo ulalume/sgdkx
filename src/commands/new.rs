@@ -11,23 +11,6 @@ pub struct Args {
     name: String,
 }
 
-/// シェル用にパスをエスケープする
-pub fn escape_path(path: &str) -> String {
-    // エスケープが必要な特殊文字のリスト
-    const CHARS_TO_ESCAPE: &str = " \t\n;&|<>()$`\\\"'*?[]#~=";
-
-    let mut result = String::with_capacity(path.len() * 2); // 余裕を持って確保
-
-    for c in path.chars() {
-        if CHARS_TO_ESCAPE.contains(c) {
-            result.push('\\');
-        }
-        result.push(c);
-    }
-
-    result
-}
-
 pub fn run(args: &Args) {
     let name: &str = args.name.as_str();
     let config_path = path::config_dir().join("config.toml");
@@ -170,9 +153,8 @@ pub fn get_sgdk_config(doc: &DocumentMut) -> (Option<&str>, Option<&str>) {
 pub fn run_compiledb_make(project_path: &Path, sgdk_path: &Path) -> bool {
     println!("{}", rust_i18n::t!("running_compiledb"));
 
-    let sgdk_path_str = sgdk_path.to_str().unwrap();
-    let escaped_sgdk_path = escape_path(sgdk_path_str);
-    println!("Using SGDK path: {}", escaped_sgdk_path);
+    let sgdk_path_str_unix = sgdk_path.to_string_lossy().replace("\\", "/");
+    println!("Using SGDK path: {}", sgdk_path_str_unix);
 
     #[cfg(target_os = "windows")]
     let makefile = sgdk_path.join("makefile.gen");
@@ -181,7 +163,7 @@ pub fn run_compiledb_make(project_path: &Path, sgdk_path: &Path) -> bool {
 
     let result = match std::process::Command::new("compiledb")
         .arg("make")
-        .arg(format!("GDK={}", escaped_sgdk_path))
+        .arg(format!("GDK={}", sgdk_path_str_unix))
         .arg("-f")
         .arg(&makefile)
         .current_dir(project_path)
@@ -281,8 +263,7 @@ pub fn create_gitignore(project_path: &Path) {
 pub fn create_makefile(project_path: &Path, sgdk_path: &Path) {
     println!("{}", rust_i18n::t!("creating_makefile"));
 
-    let sgdk_path_str = sgdk_path.to_string_lossy();
-    let escaped_sgdk_path = escape_path(&sgdk_path_str);
+    let sgdk_path_str_unix = sgdk_path.to_string_lossy().replace("\\", "/");
 
     #[cfg(target_os = "windows")]
     let makefile_name = "makefile.gen";
@@ -302,7 +283,7 @@ pub fn create_makefile(project_path: &Path, sgdk_path: &Path) {
 GDK = {}
 include $(GDK)/{}
 "#,
-        escaped_sgdk_path, makefile_name,
+        sgdk_path_str_unix, makefile_name,
     );
 
     let makefile_path = project_path.join("Makefile");
