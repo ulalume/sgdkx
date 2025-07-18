@@ -10,7 +10,7 @@ pub fn config_dir() -> PathBuf {
 #[cfg(target_os = "windows")]
 pub fn config_dir() -> PathBuf {
     // Windows: %APPDATA%\sgdktool
-    let base = dirs::data_dir().expect("Failed to get data directory");
+    let base = dirs::document_dir().expect("Failed to get data directory");
     base.join(".sgdktool").join("data")
 }
 
