@@ -6,9 +6,7 @@
 
 SGDKTool is a CLI tool to support development with SGDK (Sega Genesis Development Kit).
 
----
-
-## 1. Installation
+## Installation
 
 ### Install SGDKTool (via cargo)
 
@@ -32,9 +30,7 @@ brew install doxygen # options
 - `git` is usually pre-installed, but if not, install it with `brew install git`.
 - Running `sgdktool` with no command will perform an environment check and show if all required tools are installed.
 
----
-
-## 2. Usage
+## Usage
 
 Main commands:
 
@@ -67,8 +63,6 @@ Main commands:
 
 - `sgdktool doc`<br>
   If SGDK documentation exists, it will be opened in your browser.
-
----
 
 #### Experimental Features
 
@@ -135,14 +129,10 @@ blastem Path: Not installed
 📄 SGDK documentation: /Users/[user]/.sgdktool/data/SGDK/doc/html/index.html
 ```
 
----
-
-## 3. Acknowledgements / Dependencies
+## Acknowledgements / Dependencies
 
 - [SGDK (by Stephane-D)](https://github.com/Stephane-D/SGDK)
 - [SGDK_wine (by Franticware)](https://github.com/Franticware/SGDK_wine)
 - [jgenesis (by James Groth)](https://github.com/jsgroth/jgenesis)
 
 Special thanks to these excellent projects.
-
----
