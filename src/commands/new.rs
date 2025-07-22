@@ -186,7 +186,8 @@ pub fn run_compiledb_make(project_path: &Path) -> bool {
 pub fn create_clangd_config(project_path: &Path) {
     println!("{}", rust_i18n::t!("creating_clangd_config"));
 
-    let clangd_content = r#"CompileFlags:
+    let clangd_content = r#"# Configuration for using clangd with SGDK projects in Zed Editor (adjustments for GCC-based code)
+CompileFlags:
   Add:
     - '-DSGDK_GCC'
     - '-include'
