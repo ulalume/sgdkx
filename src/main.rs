@@ -31,9 +31,6 @@ enum Commands {
     /// Setup SGDK for development
     Setup(setup::Args),
 
-    /// Show SGDK documentation status
-    Doc,
-
     /// Setup emulator for running ROM files
     SetupEmu(setup_emu::Args),
 
@@ -43,8 +40,8 @@ enum Commands {
     /// Run ROM file with emulator
     Run(run::Args),
 
-    /// Uninstall SGDK installation and configuration
-    Uninstall,
+    /// Setup web export template
+    SetupWeb(setup_web::Args),
 
     /// Export ROM and web emulator template for web deployment
     WebExport(web_export::Args),
@@ -52,11 +49,14 @@ enum Commands {
     /// Serve web-export directory with HTTP server (with COOP/COEP headers)
     WebServer(web_server::Args),
 
+    /// Show SGDK documentation status
+    Doc,
+
     /// Open SGDK installation directory
     Open(open::Args),
 
-    /// Setup web export template
-    SetupWeb(setup_web::Args),
+    /// Uninstall SGDK installation and configuration
+    Uninstall,
 }
 
 fn main() {
