@@ -2,7 +2,12 @@
 name = "sgdkx"
 version = "0.2.1"
 edition = "2024"
+description = "Unofficial command-line toolkit for SGDK"
 license = "MIT"
+repository = "https://github.com/ulalume/sgdkx"
+readme = "README.md"
+keywords = ["sgdk", "megadrive", "genesis", "cli"]
+categories = ["command-line-utilities"]
 
 [dependencies]
 clap = { version = "4", features = ["derive"] }
