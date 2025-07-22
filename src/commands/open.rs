@@ -5,11 +5,11 @@ use std::process::Command;
 pub struct Args {}
 
 pub fn run(_args: &Args) {
-    let target_dir = dirs::config_dir().unwrap().join("sgdktool");
+    let target_dir = dirs::config_dir().unwrap().join("sgdkx");
 
     if !target_dir.exists() {
         println!("SGDK directory does not exist: {}", target_dir.display());
-        println!("Please run `sgdktool setup` first.");
+        println!("Please run `sgdkx setup` first.");
         return;
     }
 

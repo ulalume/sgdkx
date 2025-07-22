@@ -1,11 +1,11 @@
+use crate::path;
 use clap::Parser;
 use std::fs;
 use std::path::{Path, PathBuf};
 use toml_edit::DocumentMut;
 
 // Import constants from setup_web
-use crate::commands::setup_web::SGDKTOOL_CONFIG_DIR_NAME;
-
+//
 #[derive(Parser)]
 pub struct Args {
     /// ROM file path (defaults to out/rom.bin)
@@ -45,7 +45,7 @@ pub fn run(args: &Args) {
             copy_directory(&template_dir, &out_path).expect("Failed to copy template files");
         }
         None => {
-            eprintln!("❌ Web template not found. Please run `sgdktool setup-web` first.");
+            eprintln!("❌ Web template not found. Please run `sgdkx setup-web` first.");
             std::process::exit(1);
         }
     }
@@ -56,15 +56,12 @@ pub fn run(args: &Args) {
 
     println!("✅ Web export complete!");
     println!("  Output directory: {}", out_path.display());
-    println!("  Run sgdktool web-server");
+    println!("  Run sgdkx web-server");
 }
 
 // テンプレートディレクトリを取得する関数
 fn get_template_directory() -> Option<PathBuf> {
-    let config_path = dirs::config_dir()
-        .expect("Failed to get config directory")
-        .join(SGDKTOOL_CONFIG_DIR_NAME)
-        .join("config.toml");
+    let config_path = path::config_dir().join("config.toml");
 
     if config_path.exists() {
         let config_str = match fs::read_to_string(&config_path) {

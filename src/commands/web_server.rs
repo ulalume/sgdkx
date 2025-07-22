@@ -37,7 +37,7 @@ pub fn run(args: &Args) {
     if !root.exists() {
         if dir == DEFAULT_DIR {
             eprintln!(
-                "❌ '{}' directory not found. Please run 'sgdktool web-export' first.",
+                "❌ '{}' directory not found. Please run 'sgdkx web-export' first.",
                 DEFAULT_DIR
             );
         } else {

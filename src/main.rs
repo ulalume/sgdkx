@@ -17,9 +17,9 @@ use commands::web_server;
 // 多言語化の初期化
 rust_i18n::i18n!("locales");
 
-/// A CLI tool for SGDK-based development
+/// Unofficial tools for SGDK workflow
 #[derive(Parser)]
-#[command(name = "sgdktool")]
+#[command(name = "sgdkx")]
 #[command(version = "0.1.3")]
 struct Cli {
     #[command(subcommand)]

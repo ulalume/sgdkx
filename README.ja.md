@@ -1,17 +1,17 @@
-# SGDKTool
+# sgdkx
 
 **このツールは開発中です。圧倒的にテストが足りていません。ご利用の際はご注意ください。Issue や PR は歓迎です。**
 
-SGDKTool は、SGDK（Sega Genesis Development Kit）を用いた開発を支援する CLI ツールです。
+sgdkx は、SGDK（Sega Genesis Development Kit）を用いた開発を支援する CLI ツールです。
 
 ---
 
 ## インストール方法
 
-### SGDKTool のインストール（cargo）
+### sgdkx のインストール（cargo）
 
 ```sh
-cargo install --git https://github.com/ulalume/sgdktool
+cargo install --git https://github.com/ulalume/sgdkx
 ```
 
 ### 必要なツールのインストール（macOS）
@@ -34,10 +34,10 @@ brew install doxygen # options
 
 主なコマンドは以下の通りです。
 
-- `sgdktool`<br>
+- `sgdkx`<br>
   環境チェック・SGDK やエミュレータの設定状況・ヘルプを表示します。
 
-- `sgdktool setup [--version バージョン]`<br>
+- `sgdkx setup [--version バージョン]`<br>
   SGDK（Sega Genesis Development Kit）をダウンロード・インストールします。<br>
   `--version` でブランチ名・タグ名・コミット ID（省略時は master）を指定できます。<br>
   例:
@@ -46,54 +46,54 @@ brew install doxygen # options
     SGDK のパスやバージョンは config.toml に保存されます。<br>
     さらに、**doxygen がインストールされていて SGDK ドキュメントが存在しない場合は、自動的にドキュメントを生成します。**
 
-- `sgdktool setup-emu [gens|blastem]`<br>
+- `sgdkx setup-emu [gens|blastem]`<br>
   エミュレータ（gens または blastem）をダウンロード・セットアップします。<br>
   インストールしたエミュレータのパスは config.toml に保存されます。
 
-- `sgdktool new <プロジェクト名>`<br>
+- `sgdkx new <プロジェクト名>`<br>
   SGDK サンプルから新しいプロジェクトを作成します。<br>
 
-- `sgdktool run [--emulator gens|blastem] [--rom パス]`
+- `sgdkx run [--emulator gens|blastem] [--rom パス]`
   エミュレータで ROM ファイルを実行します。<br>
   `--emulator` でエミュレータ（gens または blastem）、`--rom` で ROM ファイルのパスを指定できます（どちらも省略可能、デフォルトは自動検出/`out/rom.bin`）。
 
-- `sgdktool uninstall [--config-only]`
+- `sgdkx uninstall [--config-only]`
   SGDK のアンインストールと設定ファイルの削除を行います。<br>
   また、`setup-emu` でインストールしたエミュレータ（gens/blastem）も、config.toml に記載されたパスを参照して削除されます。
 
-- `sgdktool doc`
+- `sgdkx doc`
   SGDK ドキュメントが存在すればブラウザで開きます。
 
 #### 実験的な機能
 
-- `sgdktool web-export [--rom <パス>] [--dir <親ディレクトリ>]`
+- `sgdkx web-export [--rom <パス>] [--dir <親ディレクトリ>]`
   **【実験的】** ROMファイルとWebエミュレータ用テンプレートをエクスポートします。<br>
   このコマンドはWebエミュレータのテンプレート（HTML/JS/WASM）とROMを指定ディレクトリ配下の `web-export` ディレクトリにコピーします。<br>
   生成されたディレクトリをWebサーバで公開することで、ブラウザ上でゲームを動かせます。
 
-- `sgdktool web-server [--dir <ディレクトリ>] [--port <ポート>]`
+- `sgdkx web-server [--dir <ディレクトリ>] [--port <ポート>]`
   **【実験的】** `web-export` ディレクトリを組み込みHTTPサーバで公開します（WASM対応のCOOP/COEPヘッダ付き）。<br>
   デフォルトでは `web-export` ディレクトリを `localhost:8080` で公開します。<br>
   ディレクトリやポートはオプションで変更できます。<br>
-  例: `sgdktool web-server --dir web-export --port 9000`
+  例: `sgdkx web-server --dir web-export --port 9000`
 
 ### 簡単な使い方例
 
 ```sh
-sgdktool setup --version v2.11 # stable
-sgdktool setup-emu
-sgdktool new your_project
+sgdkx setup --version v2.11 # stable
+sgdkx setup-emu
+sgdkx new your_project
 cd your_project
 make
-sgdktool run
+sgdkx run
 ```
 
 ### 参考: コマンドなしで実行した場合の出力例
 
 ```
-A CLI tool for SGDK-based development
+Unofficial tools for SGDK workflow
 
-Usage: sgdktool [COMMAND]
+Usage: sgdkx [COMMAND]
 
 Commands:
   setup       Setup SGDK for development
@@ -112,7 +112,7 @@ Options:
   -h, --help     Print help
   -V, --version  Print version
 
-🩺 SGDKTool Environment Check
+🩺 sgdkx Environment Check
 ✅ git: /opt/homebrew/bin/git
 ✅ make: /usr/bin/make
 ✅ java: /opt/homebrew/opt/openjdk/bin/java
@@ -120,14 +120,14 @@ Options:
 ✅ doxygen: /opt/homebrew/bin/doxygen
 ✅ wine: /opt/homebrew/bin/wine
 
-📝 SGDKTool Configuration: /Users/[user]/.sgdktool/data/config.toml
-SGDK Path   : /Users/[user]/.sgdktool/data/SGDK
+📝 sgdkx Configuration: /Users/[user]/.sgdkx/data/config.toml
+SGDK Path   : /Users/[user]/.sgdkx/data/SGDK
 Version     : v2.11
 Commit ID   : ef9292c03fe33a2f8af3a2589ab856a53dcef35c
-Gens Path   : /Users/[user]/.sgdktool/data/gens/gens.exe
+Gens Path   : /Users/[user]/.sgdkx/data/gens/gens.exe
 blastem Path: Not installed
 
-📄 SGDK documentation: /Users/[user]/.sgdktool/data/SGDK/doc/html/index.html
+📄 SGDK documentation: /Users/[user]/.sgdkx/data/SGDK/doc/html/index.html
 ```
 
 ## 謝辞・依存プロジェクト

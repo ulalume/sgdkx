@@ -1,3 +1,4 @@
+use crate::path;
 use clap::Parser;
 use reqwest::blocking::Client;
 use serde::{Deserialize, Serialize};
@@ -11,13 +12,12 @@ use zip::ZipArchive;
 use rust_i18n;
 
 // Constants for configuration paths
-pub const SGDKTOOL_CONFIG_DIR_NAME: &str = "sgdktool";
 pub const WEB_EXPORT_DIR_NAME: &str = "web-export";
 const CONFIG_FILE_NAME: &str = "config.toml";
-const WEB_TEMPLATE_GITHUB_API_URL: &str = "https://api.github.com/repos/ulalume/sgdktool/releases";
+const WEB_TEMPLATE_GITHUB_API_URL: &str = "https://api.github.com/repos/ulalume/sgdkx/releases";
 // Alternative URL for direct download if GitHub API fails
 const WEB_TEMPLATE_DIRECT_URL: &str =
-    "https://github.com/ulalume/sgdktool/releases/download/v0.0.1/web-template-v0.0.1.zip";
+    "https://github.com/ulalume/sgdkx/releases/download/v0.0.1/web-template-v0.0.1.zip";
 
 // GitHub API response structures
 #[derive(Serialize, Deserialize, Debug)]
@@ -37,9 +37,7 @@ pub struct Args {}
 
 pub fn run(_args: &Args) {
     let client = Client::new();
-    let config_dir = dirs::config_dir()
-        .expect("Failed to get config directory")
-        .join(SGDKTOOL_CONFIG_DIR_NAME);
+    let config_dir = path::config_dir();
     let web_export_template_dir = config_dir.join(WEB_EXPORT_DIR_NAME);
     let config_path = config_dir.join(CONFIG_FILE_NAME);
 
@@ -51,7 +49,7 @@ pub fn run(_args: &Args) {
     // Add User-Agent header to avoid GitHub API restrictions
     let response = match client
         .get(WEB_TEMPLATE_GITHUB_API_URL)
-        .header("User-Agent", "sgdktool/0.1.1")
+        .header("User-Agent", "sgdkx/0.1.1")
         .header("Accept", "application/vnd.github.v3+json")
         .send()
     {
@@ -162,7 +160,7 @@ fn download_and_extract_template(
 
     let mut zip_response = match client
         .get(zipball_url)
-        .header("User-Agent", "sgdktool/0.1.1")
+        .header("User-Agent", "sgdkx/0.1.1")
         .send()
     {
         Ok(resp) => {
@@ -237,7 +235,6 @@ fn download_and_extract_template(
             Some(path) => {
                 let components: Vec<_> = path.components().collect();
                 if components.len() > 1 {
-                    // Skip the top-level directory (e.g., sgdktool-web-template-0.0.1/...)
                     let relative_path: PathBuf = components[1..].iter().collect();
                     // Additional check for macOS metadata on the relative path
                     let rel_path_str = relative_path.to_string_lossy();

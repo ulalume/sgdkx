@@ -1835,8 +1835,8 @@ dependencies = [
 ]
 
 [[package]]
-name = "sgdktool"
-version = "0.2.0"
+name = "sgdkx"
+version = "0.2.1"
 dependencies = [
  "clap",
  "dialoguer",

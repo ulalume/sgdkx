@@ -177,7 +177,7 @@ fn find_emulator_executable(config_dir: &Path, emulator: &str) -> Option<PathBuf
 }
 
 fn show_help_output() {
-    let exe = std::env::current_exe().unwrap_or_else(|_| "sgdktool".into());
+    let exe = std::env::current_exe().unwrap_or_else(|_| "sgdkx".into());
 
     let status = Command::new(exe)
         .arg("help")

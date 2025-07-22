@@ -38,7 +38,7 @@ pub fn run(args: &Args) {
         } else if find_emulator_executable(&config_dir, "blastem").is_some() {
             "blastem".to_string()
         } else {
-            eprintln!("No emulator found. Please run 'sgdktool setup-emu' first.");
+            eprintln!("No emulator found. Please run 'sgdkx setup-emu' first.");
             std::process::exit(1);
         }
     };
@@ -56,7 +56,7 @@ pub fn run(args: &Args) {
         }
     } else {
         eprintln!(
-            "Emulator '{}' not found. Please run 'sgdktool setup-emu {}' first.",
+            "Emulator '{}' not found. Please run 'sgdkx setup-emu {}' first.",
             emulator_to_use, emulator_to_use
         );
         std::process::exit(1);
