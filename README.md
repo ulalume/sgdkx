@@ -2,7 +2,7 @@
 
 🇯🇵 日本語版 README は[こちら](./README.ja.md)をご覧ください。
 
-**This tool is under active development. There is a significant lack of tests. Use at your own risk!**
+**This tool is under active development. Use at your own risk!**
 
 sgdkx is a CLI tool to support development with SGDK (Sega Genesis Development Kit).
 
