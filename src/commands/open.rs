@@ -1,3 +1,4 @@
+use crate::path;
 use clap::Parser;
 use std::process::Command;
 
@@ -5,7 +6,7 @@ use std::process::Command;
 pub struct Args {}
 
 pub fn run(_args: &Args) {
-    let target_dir = dirs::config_dir().unwrap().join("sgdkx");
+    let target_dir = path::config_dir();
 
     if !target_dir.exists() {
         println!("SGDK directory does not exist: {}", target_dir.display());
