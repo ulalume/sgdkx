@@ -8,6 +8,7 @@ repository = "https://github.com/ulalume/sgdkx"
 readme = "README.md"
 keywords = ["sgdk", "megadrive", "genesis", "cli"]
 categories = ["command-line-utilities"]
+exclude = ["/target", ".github"]
 
 [dependencies]
 clap = { version = "4", features = ["derive"] }
