@@ -11,7 +11,7 @@ sgdkx is a CLI tool to support development with SGDK (Sega Genesis Development K
 ### Install sgdkx (via cargo)
 
 ```sh
-cargo install --git https://github.com/ulalume/sgdkx
+cargo install sgdkx
 ```
 
 ### Required Tools (macOS)

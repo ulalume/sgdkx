@@ -11,7 +11,7 @@ sgdkx は、SGDK（Sega Genesis Development Kit）を用いた開発を支援す
 ### sgdkx のインストール（cargo）
 
 ```sh
-cargo install --git https://github.com/ulalume/sgdkx
+cargo install sgdkx
 ```
 
 ### 必要なツールのインストール（macOS）
