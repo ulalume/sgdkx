@@ -191,6 +191,7 @@ pub fn create_clangd_config(project_path: &Path) {
     - '-DSGDK_GCC'
     - '-include'
     - 'types.h'
+    - '-std=c23'
   Remove:
     - '-ffat-lto-objects'
     - '-externally_visible'
