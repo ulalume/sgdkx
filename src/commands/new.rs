@@ -107,7 +107,7 @@ fn select_template_dialoguer(sgdk_path: &Path) -> PathBuf {
     let items: Vec<_> = templates.iter().map(|(rel, _)| rel.clone()).collect();
 
     let selection = Select::with_theme(&ColorfulTheme::default())
-        .with_prompt("Select a project template from the SGDK samples folder (Esc to cancel)")
+        .with_prompt("Select a project template from the SGDK/sample folder (Esc to cancel)")
         .items(&items)
         .default(0)
         .interact_opt()
