@@ -1,7 +1,5 @@
 # sgdkx
 
-**このツールは開発中です。ご利用の際はご注意ください。**
-
 sgdkx は、SGDK（Sega Genesis Development Kit）を用いた開発を支援する CLI ツールです。
 
 ---
@@ -137,3 +135,8 @@ blastem Path: Not installed
 - [jgenesis (by James Groth)](https://github.com/jsgroth/jgenesis)
 
 これらの素晴らしいプロジェクトに感謝します。
+
+## 注意事項
+
+- このツールは開発中です。
+- Linuxでのテストが十分に行えていないため、Linuxユーザーの方はご注意ください。
