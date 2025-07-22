@@ -64,14 +64,16 @@ Main commands:
 
 #### Experimental Features
 
-- `sgdkx web-export [--rom <path>] [--dir <parent-dir>]`<br>
-  **[Experimental]** Export your ROM and a web emulator template for browser-based play.<br>
-  This command copies a web emulator template (HTML/JS/WASM) and your ROM into a new `web-export` directory under the specified parent directory (default: current directory).<br>
-  You can then serve this directory to play your game in a browser.
+- `sgdkx setup-web`
+  Download a web emulator template for playing your ROM in a browser.
 
-- `sgdkx web-server [--dir <directory>] [--port <port>]`<br>
-  **[Experimental]** Serve the `web-export` directory with a built-in HTTP server (with COOP/COEP headers for WASM compatibility).<br>
-  By default, serves the `web-export` directory on `localhost:8080`. You can change the directory and port with options.<br>
+- `sgdkx web-export [--rom <path>] [--dir <parent-dir>]`
+  Export your ROM and a web emulator template for browser-based play.
+  This command copies a web emulator template (HTML/JS/WASM) and your ROM into a new `web-export` directory under the specified parent directory (default: current directory).
+
+- `sgdkx web-server [--dir <directory>] [--port <port>]`
+  Serve the `web-export` directory using a built-in HTTP server (with COOP/COEP headers for WASM compatibility).
+  By default, it serves the `web-export` directory at `localhost:8080`. You can change the directory and port using the options.
   Example: `sgdkx web-server --dir web-export --port 9000`
 
 ### Simple Example

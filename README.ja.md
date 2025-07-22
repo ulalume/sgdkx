@@ -64,13 +64,15 @@ brew install doxygen # options
 
 #### 実験的な機能
 
+- `sgdkx setup-web`
+  Webエミュレータ用テンプレートを設定します。
+
 - `sgdkx web-export [--rom <パス>] [--dir <親ディレクトリ>]`
-  **【実験的】** ROMファイルとWebエミュレータ用テンプレートをエクスポートします。<br>
-  このコマンドはWebエミュレータのテンプレート（HTML/JS/WASM）とROMを指定ディレクトリ配下の `web-export` ディレクトリにコピーします。<br>
-  生成されたディレクトリをWebサーバで公開することで、ブラウザ上でゲームを動かせます。
+  ROMファイルとWebエミュレータ用テンプレートをエクスポートします。<br>
+  このコマンドはWebエミュレータのテンプレート（HTML/JS/WASM）とROMを指定ディレクトリ配下の `web-export` ディレクトリにコピーします。
 
 - `sgdkx web-server [--dir <ディレクトリ>] [--port <ポート>]`
-  **【実験的】** `web-export` ディレクトリを組み込みHTTPサーバで公開します（WASM対応のCOOP/COEPヘッダ付き）。<br>
+  `web-export` ディレクトリを組み込みHTTPサーバで公開します（WASM対応のCOOP/COEPヘッダ付き）。<br>
   デフォルトでは `web-export` ディレクトリを `localhost:8080` で公開します。<br>
   ディレクトリやポートはオプションで変更できます。<br>
   例: `sgdkx web-server --dir web-export --port 9000`
