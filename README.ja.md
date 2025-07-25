@@ -97,15 +97,15 @@ Usage: sgdkx [COMMAND]
 
 Commands:
   setup       Setup SGDK for development
-  doc         Show SGDK documentation status
   setup-emu   Setup emulator for running ROM files
   new         Create a new SGDK project
   run         Run ROM file with emulator
-  uninstall   Uninstall SGDK installation and configuration
+  setup-web   Setup web export template
   web-export  Export ROM and web emulator template for web deployment
   web-server  Serve web-export directory with HTTP server (with COOP/COEP headers)
+  doc         Show SGDK documentation status
   open        Open SGDK installation directory
-  setup-web   Setup web export template
+  uninstall   Uninstall SGDK installation and configuration
   help        Print this message or the help of the given subcommand(s)
 
 Options:
