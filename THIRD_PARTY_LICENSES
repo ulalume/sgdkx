@@ -41,7 +41,7 @@
             <h1>Third Party Licenses</h1>
             <p>This page lists the licenses of the projects used in cargo-about.</p>
         </div>
-    
+
         <h2>Overview of licenses:</h2>
         <ul class="licenses-overview">
             <li><a href="#Apache-2.0">Apache License 2.0</a> (226)</li>
@@ -7462,7 +7462,7 @@ TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR
 PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF
 LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
 NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
-SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE. 
+SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 </pre>
             </li>
             <li class="license">
@@ -8905,7 +8905,7 @@ You may use this code under the terms of either license.
     means any form of the work other than Source Code Form.
 
 1.7. &quot;Larger Work&quot;
-    means a work that combines Covered Software with other material, in 
+    means a work that combines Covered Software with other material, in
     a separate file or files, that is not Covered Software.
 
 1.8. &quot;License&quot;
@@ -9315,7 +9315,7 @@ authorization of the copyright holder.
                     <li><a href=" https://github.com/trifectatechfoundation/zlib-rs ">libz-rs-sys 0.5.1</a></li>
                     <li><a href=" https://github.com/trifectatechfoundation/zlib-rs ">zlib-rs 0.5.1</a></li>
                 </ul>
-                <pre class="license-text">(C) 2024 Trifecta Tech Foundation 
+                <pre class="license-text">(C) 2024 Trifecta Tech Foundation
 
 This software is provided &#x27;as-is&#x27;, without any express or implied
 warranty. In no event will the authors be held liable for any damages
@@ -9397,4 +9397,3 @@ bzip2/libbzip2 version 1.1.0 of 6 September 2010
 </body>
 
 </html>
-
