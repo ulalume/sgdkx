@@ -19,8 +19,8 @@ The following tools are required. You can install them with Homebrew:
 ```sh
 brew install make openjdk compiledb
 
-brew tap gcenx/wine
-brew install --cask --no-quarantine wine-crossover
+brew tap homebrew/cask-versions
+brew install --cask --no-quarantine gcenx/wine/wine-crossover
 
 brew install doxygen # options
 ```
