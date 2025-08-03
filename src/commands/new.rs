@@ -200,7 +200,8 @@ CompileFlags:
     - '-m68000'
 Diagnostics:
   Suppress:
-    - main_arg_wrong
+    - 'main_arg_wrong'
+    - '-Wunknown-attributes'
 "#;
 
     let clangd_path = project_path.join(".clangd");
