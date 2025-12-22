@@ -192,7 +192,7 @@ CompileFlags:
     - '-DSGDK_GCC'
     - '-include'
     - 'types.h'
-    - '-std=c23'
+    - '-std=c17'
   Remove:
     - '-ffat-lto-objects'
     - '-externally_visible'
@@ -221,7 +221,7 @@ pub fn create_vscode_config(project_path: &Path) {
     "configurations": [
       {
         "name": "sgdk",
-        "cStandard": "c23",
+        "cStandard": "c17",
         "intelliSenseMode": "gcc-x64",
         "compileCommands": "${workspaceFolder}/compile_commands.json"
       }
