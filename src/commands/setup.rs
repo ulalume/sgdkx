@@ -1,6 +1,8 @@
 use crate::path;
 use clap::Parser;
 use std::fs;
+#[cfg(not(target_os = "windows"))]
+use std::io;
 use std::path::Path;
 use std::process::Command;
 use toml_edit::{DocumentMut, value};
@@ -239,30 +241,198 @@ fn reset_sgdk_worktree(target_dir: &Path) {
 #[cfg(not(target_os = "windows"))]
 fn run_generate_wine(sgdk_path: &Path) {
     let sgdk_bin = sgdk_path.join("bin");
-    let script_url =
-        "https://raw.githubusercontent.com/Franticware/SGDK_wine/master/generate_wine.sh";
     let local_script = sgdk_bin.join("generate_wine.sh");
+    let preferred = select_wine_script_variant(sgdk_path);
+    let fallback = preferred.fallback();
 
     println!("{}", rust_i18n::t!("wine_downloading"));
-    let response = reqwest::blocking::get(script_url)
-        .expect("Script download failed")
-        .text()
-        .expect("Text retrieval failed");
-    fs::write(&local_script, response).expect("Failed to write generate_wine.sh");
 
-    println!("{}", rust_i18n::t!("wine_generating"));
-    let status = Command::new("sh")
-        .arg("generate_wine.sh")
-        .current_dir(sgdk_path.join("bin"))
-        .status()
-        .expect("Failed to execute generate_wine.sh");
+    for variant in [preferred, fallback] {
+        let response = match reqwest::blocking::get(variant.script_url()) {
+            Ok(res) => match res.text() {
+                Ok(text) => text,
+                Err(e) => {
+                    eprintln!("failed to read wine script text ({variant:?}): {e}");
+                    continue;
+                }
+            },
+            Err(e) => {
+                eprintln!("failed to download wine script ({variant:?}): {e}");
+                continue;
+            }
+        };
 
-    if !status.success() {
-        eprintln!("{}", rust_i18n::t!("wine_script_failed"));
-        std::process::exit(1);
+        if let Err(e) = fs::write(&local_script, response) {
+            eprintln!("failed to write generate_wine.sh ({variant:?}): {e}");
+            continue;
+        }
+
+        println!("{}", rust_i18n::t!("wine_generating"));
+        let status = match Command::new("sh")
+            .arg("generate_wine.sh")
+            .current_dir(sgdk_path.join("bin"))
+            .status()
+        {
+            Ok(s) => s,
+            Err(e) => {
+                eprintln!("failed to execute generate_wine.sh ({variant:?}): {e}");
+                continue;
+            }
+        };
+
+        if !status.success() {
+            eprintln!(
+                "wine script exited non-zero ({variant:?}): {:?}",
+                status.code()
+            );
+            continue;
+        }
+
+        if let Err(e) = regenerate_wine_wrappers(&sgdk_bin) {
+            eprintln!("failed to regenerate wine wrappers ({variant:?}): {e}");
+            continue;
+        }
+
+        if is_valid_wine_makefile(sgdk_path) {
+            println!("{}", rust_i18n::t!("wine_wrapper_complete"));
+            return;
+        }
+
+        eprintln!("wine script output is invalid ({variant:?}), trying fallback...");
     }
 
-    println!("{}", rust_i18n::t!("wine_wrapper_complete"));
+    eprintln!("{}", rust_i18n::t!("wine_script_failed"));
+    std::process::exit(1);
+}
+
+#[cfg(not(target_os = "windows"))]
+#[derive(Clone, Copy, Debug)]
+enum WineScriptVariant {
+    Legacy,
+    Modern,
+}
+
+#[cfg(not(target_os = "windows"))]
+impl WineScriptVariant {
+    fn script_url(self) -> &'static str {
+        match self {
+            // Last revision before common.mk-based split logic was introduced.
+            Self::Legacy => {
+                "https://raw.githubusercontent.com/Franticware/SGDK_wine/e3716d4/generate_wine.sh"
+            }
+            // Revision tested against SGDK 1.80.
+            Self::Modern => {
+                "https://raw.githubusercontent.com/Franticware/SGDK_wine/70ca17c76a1fc866de5d4aaf2988059d3db465f8/generate_wine.sh"
+            }
+        }
+    }
+
+    fn fallback(self) -> Self {
+        match self {
+            Self::Legacy => Self::Modern,
+            Self::Modern => Self::Legacy,
+        }
+    }
+}
+
+#[cfg(not(target_os = "windows"))]
+fn regenerate_wine_wrappers(sgdk_bin: &Path) -> io::Result<()> {
+    #[cfg(unix)]
+    use std::os::unix::fs::PermissionsExt;
+
+    let mut found_exe = false;
+    for entry in fs::read_dir(sgdk_bin)? {
+        let entry = entry?;
+        let path = entry.path();
+        if path.extension().and_then(|e| e.to_str()) != Some("exe") {
+            continue;
+        }
+        found_exe = true;
+
+        let stem = match path.file_stem().and_then(|s| s.to_str()) {
+            Some(s) => s,
+            None => continue,
+        };
+        let wrapper_path = sgdk_bin.join(stem);
+        let wrapper = r#"#!/bin/sh
+BIN_DIR="$(dirname "$0")"
+WINEDEBUG=-all WINEPREFIX="$BIN_DIR/.wineconf" wine "$BIN_DIR/$(basename "$0").exe" "$@"
+"#;
+        fs::write(&wrapper_path, wrapper)?;
+
+        #[cfg(unix)]
+        {
+            let mut perms = fs::metadata(&wrapper_path)?.permissions();
+            perms.set_mode(0o755);
+            fs::set_permissions(&wrapper_path, perms)?;
+        }
+    }
+
+    if !found_exe {
+        return Err(io::Error::new(
+            io::ErrorKind::NotFound,
+            "no .exe files found under SGDK/bin",
+        ));
+    }
+    Ok(())
+}
+
+#[cfg(not(target_os = "windows"))]
+fn select_wine_script_variant(sgdk_path: &Path) -> WineScriptVariant {
+    let makefile_path = sgdk_path.join("makefile.gen");
+    let content = match fs::read_to_string(&makefile_path) {
+        Ok(c) => c,
+        Err(e) => {
+            eprintln!("failed to read {}: {e}", makefile_path.display());
+            return WineScriptVariant::Modern;
+        }
+    };
+
+    if makefile_includes_common_mk(&content) {
+        WineScriptVariant::Modern
+    } else {
+        WineScriptVariant::Legacy
+    }
+}
+
+#[cfg(not(target_os = "windows"))]
+fn makefile_includes_common_mk(content: &str) -> bool {
+    content.lines().any(|line| {
+        let line = line.trim();
+        line.starts_with("include") && line.contains("common.mk")
+    })
+}
+
+#[cfg(not(target_os = "windows"))]
+fn is_valid_wine_makefile(sgdk_path: &Path) -> bool {
+    let wine_makefile_path = sgdk_path.join("makefile_wine.gen");
+    let content = match fs::read_to_string(&wine_makefile_path) {
+        Ok(c) => c,
+        Err(e) => {
+            eprintln!("failed to read {}: {e}", wine_makefile_path.display());
+            return false;
+        }
+    };
+
+    // Broken output from an incompatible script often loses the MAKEFILE_DIR header.
+    content.contains("MAKEFILE_DIR") && content.contains("all: release")
+}
+
+#[cfg(all(test, not(target_os = "windows")))]
+mod tests {
+    use super::makefile_includes_common_mk;
+
+    #[test]
+    fn makefile_with_common_mk_is_detected_as_modern() {
+        let content = "MAKEFILE_DIR := ...\ninclude $(GDK)/common.mk\nall: release\n";
+        assert!(makefile_includes_common_mk(content));
+    }
+
+    #[test]
+    fn makefile_without_common_mk_is_detected_as_legacy() {
+        let content = "MAKEFILE_DIR := ...\nBIN := $(GDK)/bin\nall: release\n";
+        assert!(!makefile_includes_common_mk(content));
+    }
 }
 
 /// SGDKドキュメント生成（doxygenがある場合のみ）
