@@ -9,7 +9,9 @@ pub fn run() {
 
     println!("\n🩺 sgdkx Environment Check");
 
-    for tool in ["git", "make", "java"].iter() {
+    // make is required to build; git is used for Windows setup. The Java runtime is
+    // bundled (see "JRE" below), so system `java` is not required on Unix.
+    for tool in ["git", "make"].iter() {
         check_tool(tool);
     }
 
@@ -40,6 +42,21 @@ pub fn run() {
         match toolchain {
             Some(tc) => println!("Toolchain     : {}", tc),
             None => println!("Toolchain     : bundled (Windows)"),
+        }
+
+        // Bundled Java runtime (used by make for rescomp/sizebnd); falls back to
+        // system Java only if absent.
+        let jre = doc
+            .get("jre")
+            .and_then(|v| v.as_inline_table())
+            .and_then(|tbl| tbl.get("path"))
+            .and_then(|v| v.as_str());
+        match jre {
+            Some(j) => println!("JRE (bundled) : {}", j),
+            None => match which::which("java") {
+                Ok(p) => println!("JRE           : system java ({})", p.display()),
+                Err(_) => println!("JRE           : ❌ none (no bundled JRE, no system java)"),
+            },
         }
 
         let commit = Command::new("git")
