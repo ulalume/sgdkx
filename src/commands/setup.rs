@@ -49,6 +49,20 @@ fn setup_native(config_dir: &Path, version: &str) {
         println!("✅ gcc toolchain installed: {}", toolchain_dir.display());
     }
 
+    // 1b. bundled minimal JRE (for rescomp/sizebnd) — download once, reuse
+    let jre_dir = config_dir.join("jre");
+    if jre_dir.join("bin").is_dir() {
+        println!("✅ bundled JRE already present: {}", jre_dir.display());
+    } else {
+        println!("📥 Downloading bundled JRE ({})...", plat);
+        let asset = format!("jre-{}.tar.gz", plat);
+        let url = release::asset_download_url(release::JRE_REPO, release::JRE_TAG, &asset);
+        match release::download_tar_gz(&url, config_dir) {
+            Ok(_) => println!("✅ JRE installed: {}", jre_dir.display()),
+            Err(e) => println!("⚠️  bundled JRE unavailable ({e}); system Java will be used"),
+        }
+    }
+
     // 2. resolve SGDK release tag
     let tag = if version == "master" {
         match release::latest_master_tag(release::SGDK_NATIVE_REPO) {
@@ -90,7 +104,12 @@ fn setup_native(config_dir: &Path, version: &str) {
         Err(e) => println!("⚠️  documentation not available ({e})"),
     }
 
-    write_config(config_dir, &sgdk_dir, &tag, Some(&toolchain_dir));
+    let jre_opt = if jre_dir.join("bin").is_dir() {
+        Some(jre_dir.as_path())
+    } else {
+        None
+    };
+    write_config(config_dir, &sgdk_dir, &tag, Some(&toolchain_dir), jre_opt);
     println!("✅ SGDK setup complete: {}", sgdk_dir.display());
 }
 
@@ -149,11 +168,17 @@ fn setup_windows(config_dir: &Path, version: &str) {
         }
     }
 
-    write_config(config_dir, &target_dir, version, None);
+    write_config(config_dir, &target_dir, version, None, None);
     println!("✅ SGDK setup complete: {}", target_dir.display());
 }
 
-fn write_config(config_dir: &Path, sgdk_dir: &Path, version: &str, toolchain_dir: Option<&Path>) {
+fn write_config(
+    config_dir: &Path,
+    sgdk_dir: &Path,
+    version: &str,
+    toolchain_dir: Option<&Path>,
+    jre_dir: Option<&Path>,
+) {
     use toml_edit::{InlineTable, Item, Value};
     let config_path = config_dir.join("config.toml");
     let mut doc = if config_path.exists() {
@@ -175,6 +200,11 @@ fn write_config(config_dir: &Path, sgdk_dir: &Path, version: &str, toolchain_dir
         let mut t = InlineTable::new();
         t.insert("path", Value::from(canon(tc)));
         doc.insert("toolchain", Item::Value(Value::InlineTable(t)));
+    }
+    if let Some(jre) = jre_dir {
+        let mut t = InlineTable::new();
+        t.insert("path", Value::from(canon(jre)));
+        doc.insert("jre", Item::Value(Value::InlineTable(t)));
     }
     fs::write(&config_path, doc.to_string()).expect("Failed to write config.toml");
 }

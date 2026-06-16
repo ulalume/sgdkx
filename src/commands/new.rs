@@ -56,9 +56,15 @@ pub fn run(args: &Args) {
     // Create .gitignore
     create_gitignore(&dest_path);
 
-    // Create the Makefile (native: makefile.gen + toolchain on PATH)
+    // Create the Makefile (native: makefile.gen + toolchain/JRE on PATH)
     let toolchain = get_toolchain_path(&doc);
-    create_makefile(&dest_path, &sgdk_path, toolchain.as_deref().map(Path::new));
+    let jre = get_jre_path(&doc);
+    create_makefile(
+        &dest_path,
+        &sgdk_path,
+        toolchain.as_deref().map(Path::new),
+        jre.as_deref().map(Path::new),
+    );
 
     // Generate compile_commands.json (no external compiledb dependency)
     generate_compile_commands(&dest_path);
@@ -202,6 +208,15 @@ pub fn get_toolchain_path(doc: &DocumentMut) -> Option<String> {
         .map(|s| s.to_string())
 }
 
+/// config.tomlのjreインラインテーブルからpathを取得（無ければsystem Java）
+pub fn get_jre_path(doc: &DocumentMut) -> Option<String> {
+    doc.get("jre")
+        .and_then(|v| v.as_inline_table())
+        .and_then(|tbl| tbl.get("path"))
+        .and_then(|v| v.as_str())
+        .map(|s| s.to_string())
+}
+
 pub fn create_clangd_config(project_path: &Path) {
     println!("📄 Creating .clangd configuration file...");
 
@@ -277,18 +292,31 @@ fn unixify(p: &Path) -> String {
     s.strip_prefix("//?/").map(|s| s.to_string()).unwrap_or(s)
 }
 
-pub fn create_makefile(project_path: &Path, sgdk_path: &Path, toolchain_path: Option<&Path>) {
+pub fn create_makefile(
+    project_path: &Path,
+    sgdk_path: &Path,
+    toolchain_path: Option<&Path>,
+    jre_path: Option<&Path>,
+) {
     println!("📄 Creating Makefile...");
 
     let gdk = unixify(sgdk_path);
     println!("Using SGDK path: {}", gdk);
 
-    // On Unix the native gcc toolchain and SGDK's native tools (convsym/sjasm/
-    // bintos/mac68k, resolved bare by common.mk) must be on PATH; prepend them for
-    // make's recipes only (no global PATH change). On Windows SGDK uses its bundled
-    // bin/*.exe toolchain, so no PATH line is needed.
+    // On Unix the bundled JRE (for rescomp/sizebnd), the native gcc toolchain, and
+    // SGDK's native tools (convsym/sjasm/bintos/mac68k, resolved bare by common.mk)
+    // must be on PATH; prepend them for make's recipes only (no global PATH change).
+    // On Windows SGDK uses its bundled bin/*.exe toolchain, so no PATH line is needed.
     let path_line = match toolchain_path {
-        Some(tc) => format!("export PATH := {}:$(GDK)/bin:$(PATH)\n", unixify(&tc.join("bin"))),
+        Some(tc) => {
+            let mut dirs = Vec::new();
+            if let Some(jre) = jre_path {
+                dirs.push(unixify(&jre.join("bin")));
+            }
+            dirs.push(unixify(&tc.join("bin")));
+            dirs.push("$(GDK)/bin".to_string());
+            format!("export PATH := {}:$(PATH)\n", dirs.join(":"))
+        }
         None => String::new(),
     };
 

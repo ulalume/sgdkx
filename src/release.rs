@@ -11,6 +11,8 @@ pub const TOOLCHAIN_TAG: &str = "gcc13.2.0-1";
 pub const TOOLCHAIN_GCC_VERSION: &str = "13.2.0";
 pub const SGDK_NATIVE_REPO: &str = "ulalume/sgdk-native-builds";
 pub const BLASTEM_REPO: &str = "ulalume/blastem-builds";
+pub const JRE_REPO: &str = "ulalume/jre-builds";
+pub const JRE_TAG: &str = "jdk21-1";
 
 /// Platform slug used in release asset names.
 /// linux-x86_64 / linux-arm64 / macos-arm64 / macos-x86_64 / windows-x86_64
