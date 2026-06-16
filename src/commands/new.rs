@@ -1,6 +1,5 @@
 use crate::path;
 use clap::Parser;
-use rust_i18n;
 use std::fs;
 use std::path::{Path, PathBuf};
 use toml_edit::DocumentMut;
@@ -17,14 +16,14 @@ pub fn run(args: &Args) {
 
     // Check if config.toml exists
     if !config_path.exists() {
-        eprintln!("{}", rust_i18n::t!("config_not_found_for_project"));
+        eprintln!("❌ config.toml not found. Please run `sgdkx setup` first.");
         std::process::exit(1);
     }
 
-    let text = fs::read_to_string(&config_path).expect(&rust_i18n::t!("config_read_failed"));
+    let text = fs::read_to_string(&config_path).expect("config.toml read failed");
     let doc = text
         .parse::<DocumentMut>()
-        .expect(&rust_i18n::t!("toml_parse_failed"));
+        .expect("TOML parse failed");
     let (sgdk_path_str, _) = get_sgdk_config(&doc);
     let sgdk_path = Path::new(sgdk_path_str.unwrap_or_else(|| {
         eprintln!("SGDK path not found in config.toml.");
@@ -33,20 +32,20 @@ pub fn run(args: &Args) {
 
     let dest_path = Path::new(name);
     if dest_path.exists() {
-        eprintln!("{}", rust_i18n::t!("project_exists", name = name));
+        eprintln!("❌ '{}' already exists.", name);
         std::process::exit(1);
     }
 
     // テンプレート選択
     let template_path = select_template_dialoguer(sgdk_path);
 
-    println!("{}", rust_i18n::t!("creating_project", name = name));
+    println!("📁 Creating project from SGDK template: '{}'", name);
 
     let mut opts = fs_extra::dir::CopyOptions::new();
     opts.copy_inside = true;
     fs_extra::dir::copy(&template_path, &dest_path, &opts).expect("Template copy failed");
 
-    println!("{}", rust_i18n::t!("project_created", name = name));
+    println!("✅ Project '{}' created!", name);
 
     // Create .clangd configuration file
     create_clangd_config(&dest_path);
@@ -61,7 +60,7 @@ pub fn run(args: &Args) {
     create_makefile(&dest_path, &sgdk_path);
 
     // Check for compiledb and run it if available
-    println!("{}", rust_i18n::t!("compiledb_check"));
+    println!("🔍 Checking for compiledb...");
     if check_compiledb_available() {
         run_compiledb_make(&dest_path);
     }
@@ -128,11 +127,11 @@ fn select_template_dialoguer(sgdk_path: &Path) -> PathBuf {
 pub fn check_compiledb_available() -> bool {
     match which::which("compiledb") {
         Ok(_) => {
-            println!("{}", rust_i18n::t!("compiledb_found"));
+            println!("✅ compiledb found");
             true
         }
         Err(_) => {
-            println!("{}", rust_i18n::t!("compiledb_not_found"));
+            println!("⚠️  compiledb was not found, source code analysis could not be performed");
             false
         }
     }
@@ -151,7 +150,7 @@ pub fn get_sgdk_config(doc: &DocumentMut) -> (Option<&str>, Option<&str>) {
 }
 
 pub fn run_compiledb_make(project_path: &Path) -> bool {
-    println!("{}", rust_i18n::t!("running_compiledb"));
+    println!("🔧 Running compiledb make...");
 
     let result = match std::process::Command::new("compiledb")
         .arg("make")
@@ -160,10 +159,10 @@ pub fn run_compiledb_make(project_path: &Path) -> bool {
     {
         Ok(output) => {
             if output.status.success() {
-                println!("{}", rust_i18n::t!("compiledb_success"));
+                println!("✅ compiledb make completed successfully");
                 true
             } else {
-                println!("{}", rust_i18n::t!("compiledb_failed"));
+                println!("❌ Failed to run compiledb make");
                 if !output.stderr.is_empty() {
                     eprintln!("Error: {}", String::from_utf8_lossy(&output.stderr));
                 }
@@ -174,7 +173,7 @@ pub fn run_compiledb_make(project_path: &Path) -> bool {
             }
         }
         Err(e) => {
-            println!("{}", rust_i18n::t!("compiledb_failed"));
+            println!("❌ Failed to run compiledb make");
             eprintln!("Error executing compiledb: {}", e);
             false
         }
@@ -184,7 +183,7 @@ pub fn run_compiledb_make(project_path: &Path) -> bool {
 }
 
 pub fn create_clangd_config(project_path: &Path) {
-    println!("{}", rust_i18n::t!("creating_clangd_config"));
+    println!("📄 Creating .clangd configuration file...");
 
     let clangd_content = r#"# Configuration for using clangd with SGDK projects in Zed Editor (adjustments for GCC-based code)
 CompileFlags:
@@ -206,11 +205,11 @@ Diagnostics:
 
     let clangd_path = project_path.join(".clangd");
     fs::write(clangd_path, clangd_content).expect("Failed to create .clangd file");
-    println!("{}", rust_i18n::t!("clangd_config_created"));
+    println!("✅ .clangd configuration file created");
 }
 
 pub fn create_vscode_config(project_path: &Path) {
-    println!("{}", rust_i18n::t!("creating_vscode_config"));
+    println!("📄 Creating .vscode/c_cpp_properties.json...");
 
     let vscode_dir = project_path.join(".vscode");
     if !vscode_dir.exists() {
@@ -233,11 +232,11 @@ pub fn create_vscode_config(project_path: &Path) {
     let cpp_properties_path = vscode_dir.join("c_cpp_properties.json");
     fs::write(cpp_properties_path, cpp_properties_content)
         .expect("Failed to create c_cpp_properties.json");
-    println!("{}", rust_i18n::t!("vscode_config_created"));
+    println!("✅ VS Code C++ configuration file created");
 }
 
 pub fn create_gitignore(project_path: &Path) {
-    println!("{}", rust_i18n::t!("creating_gitignore"));
+    println!("📄 Creating .gitignore file...");
 
     let gitignore_content = r#"/compile_commands.json
 /.cache
@@ -249,11 +248,11 @@ pub fn create_gitignore(project_path: &Path) {
 
     let gitignore_path = project_path.join(".gitignore");
     fs::write(gitignore_path, gitignore_content).expect("Failed to create .gitignore file");
-    println!("{}", rust_i18n::t!("gitignore_created"));
+    println!("✅ .gitignore file created");
 }
 
 pub fn create_makefile(project_path: &Path, sgdk_path: &Path) {
-    println!("{}", rust_i18n::t!("creating_makefile"));
+    println!("📄 Creating Makefile...");
 
     #[cfg(target_os = "windows")]
     let sgdk_path_str_unix = {
@@ -291,5 +290,5 @@ include $(GDK)/{}
 
     let makefile_path = project_path.join("Makefile");
     fs::write(makefile_path, makefile_content).expect("Failed to create Makefile");
-    println!("{}", rust_i18n::t!("makefile_created"));
+    println!("✅ Makefile created successfully");
 }

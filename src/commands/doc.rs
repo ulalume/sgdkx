@@ -10,8 +10,8 @@ pub fn run() {
 
     if out_html.exists() && out_html.is_dir() {
         println!(
-            "{}",
-            rust_i18n::t!("sgdk_doc_exists", path = out_html.display())
+            "📄 SGDK documentation: {}",
+            out_html.display()
         );
         // index.htmlがあればブラウザで開く
         if index_html.exists() {
@@ -39,8 +39,8 @@ pub fn run() {
 
     // doxygenの有無を確認
     if which("doxygen").is_err() {
-        println!("{}", rust_i18n::t!("sgdk_doc_doxygen_missing"));
+        println!("❗ The doxygen command was not found. Please install doxygen.");
     } else {
-        println!("{}", rust_i18n::t!("sgdk_doc_not_generated"));
+        println!("❗ SGDK documentation was not found. Please run setup again to generate it.");
     }
 }

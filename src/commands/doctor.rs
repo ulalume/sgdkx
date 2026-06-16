@@ -7,7 +7,7 @@ use toml_edit::DocumentMut;
 pub fn run() {
     show_help_output();
 
-    println!("\n{}", rust_i18n::t!("environment_check"));
+    println!("\n🩺 sgdkx Environment Check");
 
     for tool in ["git", "make", "java", "compiledb"].iter() {
         check_tool(tool);
@@ -35,11 +35,11 @@ pub fn run() {
             .unwrap_or("Unknown");
 
         println!(
-            "\n{}",
-            rust_i18n::t!("sgdk_config_exists", path = config_path.display())
+            "\n📝 sgdkx Configuration: {}",
+            config_path.display()
         );
-        println!("{}", rust_i18n::t!("sgdk_path", path = path));
-        println!("{}", rust_i18n::t!("version", version = version));
+        println!("SGDK Path   : {}", path);
+        println!("Version     : {}", version);
 
         let commit = Command::new("git")
             .args(["rev-parse", "HEAD"])
@@ -48,7 +48,7 @@ pub fn run() {
             .ok()
             .and_then(|out| String::from_utf8(out.stdout).ok())
             .unwrap_or("Unknown".to_string());
-        println!("{}", rust_i18n::t!("commit_id", commit = commit.trim()));
+        println!("Commit ID   : {}", commit.trim());
 
         // === Gens/Blastem Path Info 追加 ===
         let config_base = path::config_dir();
@@ -59,13 +59,13 @@ pub fn run() {
             .and_then(|e| e.get("gens_path"))
             .and_then(|v| v.as_str());
         if let Some(path) = gens_path_config {
-            println!("{}", rust_i18n::t!("gens_path", path = path));
+            println!("Gens Path   : {}", path);
         } else {
             let gens_path_opt = find_emulator_executable(&config_base, "gens");
             if let Some(gens_exe) = gens_path_opt {
-                println!("{}", rust_i18n::t!("gens_path", path = gens_exe.display()));
+                println!("Gens Path   : {}", gens_exe.display());
             } else {
-                println!("{}", rust_i18n::t!("gens_not_installed"));
+                println!("Gens Path   : Not installed");
             }
         }
 
@@ -75,16 +75,16 @@ pub fn run() {
             .and_then(|e| e.get("blastem_path"))
             .and_then(|v| v.as_str());
         if let Some(path) = blastem_path_config {
-            println!("{}", rust_i18n::t!("blastem_path", path = path));
+            println!("blastem Path: {}", path);
         } else {
             let blastem_path_opt = find_emulator_executable(&config_base, "blastem");
             if let Some(blastem_exe) = blastem_path_opt {
                 println!(
-                    "{}",
-                    rust_i18n::t!("blastem_path", path = blastem_exe.display())
+                    "blastem Path: {}",
+                    blastem_exe.display()
                 );
             } else {
-                println!("{}", rust_i18n::t!("blastem_not_installed"));
+                println!("blastem Path: Not installed");
             }
         }
 
@@ -92,32 +92,30 @@ pub fn run() {
         let doc_index = Path::new(path).join("doc").join("html").join("index.html");
         if doc_index.exists() {
             println!(
-                "\n{}",
-                rust_i18n::t!(
-                    "sgdk_doc_exists",
-                    path = doc_index
-                        .canonicalize()
-                        .expect("Failed to canonicalize path")
-                        .to_str()
-                        .unwrap()
-                        .replace(r"\\?\", "")
-                )
+                "\n📄 SGDK documentation: {}",
+                doc_index
+                    .canonicalize()
+                    .expect("Failed to canonicalize path")
+                    .to_str()
+                    .unwrap()
+                    .replace(r"\\?\", "")
             );
         } else {
-            println!("{}", rust_i18n::t!("sgdk_doc_not_found"));
+            println!("⚠️  SGDK documentation not found.");
         }
     } else {
-        println!("\n{}", rust_i18n::t!("config_not_found"));
+        println!("\n❌ config.toml not found. Please run `sgdkx setup`.");
     }
 }
 
 fn check_tool(tool: &str) {
     match which::which(tool) {
         Ok(path) => println!(
-            "{}",
-            rust_i18n::t!("tool_found", tool = tool, path = path.display())
+            "✅ {}: {}",
+            tool,
+            path.display()
         ),
-        Err(_) => println!("{}", rust_i18n::t!("tool_not_found", tool = tool)),
+        Err(_) => println!("❌ {}: not found", tool),
     }
 }
 
@@ -182,9 +180,9 @@ fn show_help_output() {
     let status = Command::new(exe)
         .arg("help")
         .status()
-        .expect(&rust_i18n::t!("help_failed"));
+        .expect("❌ Failed to execute sgdkx help");
 
     if !status.success() {
-        eprintln!("{}", rust_i18n::t!("help_warning"));
+        eprintln!("⚠️  Failed to execute help command");
     }
 }

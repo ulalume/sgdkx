@@ -8,9 +8,6 @@ use std::process::Command;
 use toml_edit::{DocumentMut, value};
 use which::which;
 
-// 多言語化
-use rust_i18n;
-
 #[derive(Parser)]
 pub struct Args {
     /// Branch, tag, or commit ID to clone (defaults to master)
@@ -21,16 +18,16 @@ pub struct Args {
 pub fn run(args: &Args) {
     let version: &str = &args.version;
     if which("git").is_err() {
-        eprintln!("{}", rust_i18n::t!("git_not_found"));
+        eprintln!("❌ 'git' not found. Please install it.");
         std::process::exit(1);
     }
     let target_dir = path::config_dir().join("SGDK");
 
     if target_dir.exists() {
         // 上書き確認プロンプト
-        println!("{}", rust_i18n::t!("sgdk_exists_overwrite_prompt"));
+        println!("⚠️  SGDK directory already exists. Overwrite? [y/N]:");
         use std::io::{self, Write};
-        print!("{}", rust_i18n::t!("prompt"));
+        print!("> ");
         io::stdout().flush().unwrap();
 
         let mut input = String::new();
@@ -38,7 +35,7 @@ pub fn run(args: &Args) {
         let input = input.trim().to_lowercase();
 
         if input != "y" {
-            println!("{}", rust_i18n::t!("sgdk_overwrite_cancelled"));
+            println!("❌ Operation cancelled.");
             std::process::exit(0);
         }
 
@@ -50,9 +47,9 @@ pub fn run(args: &Args) {
                 .arg("fetch")
                 .current_dir(&target_dir)
                 .status()
-                .expect(&rust_i18n::t!("sgdk_git_fetch_failed"));
+                .expect("sgdk_git_fetch_failed");
             if !fetch_status.success() {
-                eprintln!("{}", rust_i18n::t!("sgdk_git_fetch_failed"));
+                eprintln!("sgdk_git_fetch_failed");
                 std::process::exit(1);
             }
             let checkout_status = Command::new("git")
@@ -60,27 +57,27 @@ pub fn run(args: &Args) {
                 .arg(version)
                 .current_dir(&target_dir)
                 .status()
-                .expect(&rust_i18n::t!("sgdk_git_checkout_failed"));
+                .expect("❌ git fetch or checkout failed.");
             if !checkout_status.success() {
-                eprintln!("{}", rust_i18n::t!("sgdk_git_checkout_failed"));
+                eprintln!("❌ git fetch or checkout failed.");
                 std::process::exit(1);
             }
         } else {
-            eprintln!("{}", rust_i18n::t!("sgdk_git_missing"));
+            eprintln!("❌ .git directory not found in SGDK directory. Please remove the directory manually and try again.");
             std::process::exit(1);
         }
 
         // config.toml更新
-        println!("{}", rust_i18n::t!("sgdk_config_updating"));
+        println!("📝 Updating SGDK config file...");
         let config_dir = path::config_dir();
         fs::create_dir_all(&config_dir).expect("Failed to create config directory");
         let config_path = config_dir.join("config.toml");
 
         let mut doc = if config_path.exists() {
             let text =
-                fs::read_to_string(&config_path).expect(&rust_i18n::t!("config_read_failed"));
+                fs::read_to_string(&config_path).expect("config.toml read failed");
             text.parse::<DocumentMut>()
-                .expect(&rust_i18n::t!("toml_parse_failed"))
+                .expect("TOML parse failed")
         } else {
             DocumentMut::new()
         };
@@ -91,7 +88,7 @@ pub fn run(args: &Args) {
         doc["sgdk"]["version"] = value(version);
 
         fs::write(&config_path, doc.to_string()).expect("Failed to write config.toml");
-        println!("{}", rust_i18n::t!("sgdk_config_updated"));
+        println!("✅ SGDK directory version updated.");
 
         #[cfg(not(target_os = "windows"))]
         {
@@ -102,7 +99,7 @@ pub fn run(args: &Args) {
         return;
     }
 
-    println!("{}", rust_i18n::t!("cloning_sgdk"));
+    println!("📥 Cloning SGDK from GitHub...");
     if let Some(parent) = target_dir.parent() {
         fs::create_dir_all(parent).expect("Failed to create parent directory");
     }
@@ -139,7 +136,7 @@ pub fn run(args: &Args) {
     };
 
     if !clone_status.success() {
-        eprintln!("{}", rust_i18n::t!("git_clone_failed"));
+        eprintln!("❌ git clone failed");
         std::process::exit(1);
     }
 
@@ -157,15 +154,15 @@ pub fn run(args: &Args) {
         }
     }
 
-    println!("{}", rust_i18n::t!("saving_config"));
+    println!("📄 Saving path to config file...");
     let config_dir = path::config_dir();
     fs::create_dir_all(&config_dir).expect("Failed to create config directory");
     let config_path = config_dir.join("config.toml");
 
     let mut doc = if config_path.exists() {
-        let text = fs::read_to_string(&config_path).expect(&rust_i18n::t!("config_read_failed"));
+        let text = fs::read_to_string(&config_path).expect("config.toml read failed");
         text.parse::<DocumentMut>()
-            .expect(&rust_i18n::t!("toml_parse_failed"))
+            .expect("TOML parse failed")
     } else {
         DocumentMut::new()
     };
@@ -185,8 +182,8 @@ pub fn run(args: &Args) {
     generate_sgdk_doc(&target_dir);
 
     println!(
-        "{}",
-        rust_i18n::t!("sgdk_setup_complete", path = target_dir.display())
+        "✅ SGDK setup complete: {}",
+        target_dir.display()
     );
 }
 
@@ -245,7 +242,7 @@ fn run_generate_wine(sgdk_path: &Path) {
     let preferred = select_wine_script_variant(sgdk_path);
     let fallback = preferred.fallback();
 
-    println!("{}", rust_i18n::t!("wine_downloading"));
+    println!("🌐 Downloading generate_wine.sh for Wine...");
 
     for variant in [preferred, fallback] {
         let response = match reqwest::blocking::get(variant.script_url()) {
@@ -267,7 +264,7 @@ fn run_generate_wine(sgdk_path: &Path) {
             continue;
         }
 
-        println!("{}", rust_i18n::t!("wine_generating"));
+        println!("🔧 Generating Wine wrapper...");
         let status = match Command::new("sh")
             .arg("generate_wine.sh")
             .current_dir(sgdk_path.join("bin"))
@@ -294,14 +291,14 @@ fn run_generate_wine(sgdk_path: &Path) {
         }
 
         if is_valid_wine_makefile(sgdk_path) {
-            println!("{}", rust_i18n::t!("wine_wrapper_complete"));
+            println!("✅ Wine wrapper generated.");
             return;
         }
 
         eprintln!("wine script output is invalid ({variant:?}), trying fallback...");
     }
 
-    eprintln!("{}", rust_i18n::t!("wine_script_failed"));
+    eprintln!("❌ generate_wine.sh execution failed.");
     std::process::exit(1);
 }
 
@@ -474,7 +471,7 @@ fn generate_sgdk_doc(target_dir: &Path) {
                         .status();
                     match status {
                         Ok(s) if s.success() => {
-                            println!("{}", rust_i18n::t!("sgdk_doc_generated"));
+                            println!("📄 SGDK documentation generated successfully.");
                         }
                         Ok(s) => {
                             eprintln!("doxygen exited with code {:?}", s.code());

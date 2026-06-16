@@ -8,9 +8,6 @@ use std::path::PathBuf;
 use toml_edit::{DocumentMut, value};
 use zip::ZipArchive;
 
-// 多言語化
-use rust_i18n;
-
 // Constants for configuration paths
 pub const WEB_EXPORT_DIR_NAME: &str = "web-export";
 const CONFIG_FILE_NAME: &str = "config.toml";
@@ -44,7 +41,7 @@ pub fn run(_args: &Args) {
     // Ensure config directory exists
     fs::create_dir_all(&config_dir).expect("Failed to create config directory");
 
-    println!("{}", rust_i18n::t!("fetching_releases"));
+    println!("🌐 Fetching GitHub releases for web template...");
 
     // Add User-Agent header to avoid GitHub API restrictions
     let response = match client
@@ -134,8 +131,7 @@ pub fn run(_args: &Args) {
     let zipball_url = &latest_release.assets.first().unwrap().browser_download_url;
 
     println!(
-        "{}: {}",
-        rust_i18n::t!("latest_template_version"),
+        "📦 Latest template version: {}",
         latest_tag_name
     );
     // Download and extract the template from GitHub releases
@@ -156,7 +152,7 @@ fn download_and_extract_template(
     web_export_template_dir: PathBuf,
     config_path: PathBuf,
 ) {
-    println!("{}", rust_i18n::t!("downloading_template"));
+    println!("📥 Downloading web template...");
 
     let mut zip_response = match client
         .get(zipball_url)
@@ -211,7 +207,7 @@ fn download_and_extract_template(
         std::process::exit(1);
     }
 
-    println!("{}", rust_i18n::t!("extracting_template"));
+    println!("📦 Extracting template files...");
     for i in 0..archive.len() {
         let mut file = match archive.by_index(i) {
             Ok(f) => f,
@@ -300,12 +296,12 @@ fn download_and_extract_template(
             Ok(text) => match text.parse::<DocumentMut>() {
                 Ok(doc) => doc,
                 Err(e) => {
-                    eprintln!("{}: {}", rust_i18n::t!("toml_parse_failed"), e);
+                    eprintln!("{}: {}", "TOML parse failed", e);
                     std::process::exit(1);
                 }
             },
             Err(e) => {
-                eprintln!("{}: {}", rust_i18n::t!("config_read_failed"), e);
+                eprintln!("{}: {}", "config.toml read failed", e);
                 std::process::exit(1);
             }
         }
@@ -352,11 +348,8 @@ fn download_and_extract_template(
     }
 
     println!(
-        "{}",
-        rust_i18n::t!(
-            "web_template_setup_complete",
-            path = web_export_template_dir.display()
-        )
+        "✅ Web template setup complete: {}",
+        web_export_template_dir.display()
     );
 }
 

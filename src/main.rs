@@ -14,9 +14,6 @@ use commands::uninstall;
 use commands::web_export;
 use commands::web_server;
 
-// 多言語化の初期化
-rust_i18n::i18n!("locales");
-
 /// Unofficial tools for SGDK workflow
 #[derive(Parser)]
 #[command(name = "sgdkx")]
@@ -60,7 +57,6 @@ enum Commands {
 }
 
 fn main() {
-    init_locale();
     let cli = Cli::parse();
 
     match &cli.command {
@@ -100,19 +96,5 @@ fn main() {
             // Run doctor command when no subcommand is specified
             doctor::run();
         }
-    }
-}
-
-fn init_locale() {
-    // システムのロケールを取得
-    let locale = std::env::var("LANG")
-        .or_else(|_| std::env::var("LC_ALL"))
-        .unwrap_or_else(|_| "en".to_string());
-
-    // 日本語ロケールの場合は "ja" を設定
-    if locale.starts_with("ja") {
-        rust_i18n::set_locale("ja");
-    } else {
-        rust_i18n::set_locale("en");
     }
 }

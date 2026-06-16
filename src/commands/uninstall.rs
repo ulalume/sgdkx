@@ -1,5 +1,4 @@
 use crate::path;
-use rust_i18n;
 use std::fs;
 use std::path::Path;
 use toml_edit::DocumentMut;
@@ -10,7 +9,7 @@ pub fn run() {
     let config_path = config_dir.join("config.toml");
 
     // SGDK全体と設定を削除の前に確認
-    println!("{}", rust_i18n::t!("uninstall_all_confirm"));
+    println!("⚠️  Completely remove SGDK installation and config? [y/N]: ");
 
     use std::io::{self, Write};
     print!("> ");
@@ -21,7 +20,7 @@ pub fn run() {
     let input = input.trim().to_lowercase();
 
     if input != "y" && input != "yes" {
-        println!("{}", rust_i18n::t!("operation_cancelled"));
+        println!("❌ Operation cancelled.");
         return;
     }
 
@@ -36,8 +35,8 @@ pub fn run() {
                     let sgdk_dir = Path::new(sgdk_path);
                     if sgdk_dir.exists() {
                         println!(
-                            "{}",
-                            rust_i18n::t!("removing_sgdk_installation", path = sgdk_dir.display())
+                            "🗑️  Removing SGDK installation: {}",
+                            sgdk_dir.display()
                         );
                         fs::remove_dir_all(sgdk_dir).expect("Failed to remove SGDK directory");
                     }
@@ -82,8 +81,8 @@ pub fn run() {
     // 設定ディレクトリ全体を削除
     if config_dir.exists() {
         fs::remove_dir_all(&config_dir).expect("Failed to remove config directory");
-        println!("{}", rust_i18n::t!("sgdk_and_config_removed"));
+        println!("✅ SGDK and configuration completely removed");
     } else {
-        println!("{}", rust_i18n::t!("nothing_to_remove"));
+        println!("⚠️  Nothing to remove found");
     }
 }
