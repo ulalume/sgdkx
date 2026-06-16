@@ -9,11 +9,11 @@ pub fn run() {
 
     println!("\n🩺 sgdkx Environment Check");
 
-    // make is required to build; git is used for Windows setup. The Java runtime is
-    // bundled (see "JRE" below), so system `java` is not required on Unix.
-    for tool in ["git", "make"].iter() {
-        check_tool(tool);
-    }
+    // make is required to build. git is only needed for Windows setup (clone). The
+    // Java runtime is bundled (see "JRE" below), so system `java` is not required.
+    check_tool("make");
+    #[cfg(target_os = "windows")]
+    check_tool("git");
 
     let config_path = path::config_dir().join("config.toml");
 
@@ -59,14 +59,20 @@ pub fn run() {
             },
         }
 
-        let commit = Command::new("git")
-            .args(["rev-parse", "HEAD"])
-            .current_dir(path)
-            .output()
-            .ok()
-            .and_then(|out| String::from_utf8(out.stdout).ok())
-            .unwrap_or("Unknown".to_string());
-        println!("Commit ID     : {}", commit.trim());
+        // Commit ID is only meaningful on Windows (SGDK is a git clone there); the
+        // Unix native bundle ships without .git — its commit is encoded in the
+        // version tag (e.g. master-<sha>).
+        #[cfg(target_os = "windows")]
+        {
+            let commit = Command::new("git")
+                .args(["rev-parse", "HEAD"])
+                .current_dir(path)
+                .output()
+                .ok()
+                .and_then(|out| String::from_utf8(out.stdout).ok())
+                .unwrap_or("Unknown".to_string());
+            println!("Commit ID     : {}", commit.trim());
+        }
 
         // BlastEm (the only supported emulator)
         let config_base = path::config_dir();
