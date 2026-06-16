@@ -1,6 +1,6 @@
 use crate::path;
 use std::fs;
-use std::path::{Path, PathBuf};
+use std::path::Path;
 use std::process::Command;
 use toml_edit::DocumentMut;
 
@@ -12,12 +12,8 @@ pub fn run() {
     for tool in ["git", "make", "java", "compiledb"].iter() {
         check_tool(tool);
     }
-
-    // doxygenはオプション
+    // optional
     check_tool("doxygen");
-
-    #[cfg(not(target_os = "windows"))]
-    check_tool("wine");
 
     let config_path = path::config_dir().join("config.toml");
 
@@ -34,12 +30,19 @@ pub fn run() {
             .and_then(|v| v.as_str())
             .unwrap_or("Unknown");
 
-        println!(
-            "\n📝 sgdkx Configuration: {}",
-            config_path.display()
-        );
-        println!("SGDK Path   : {}", path);
-        println!("Version     : {}", version);
+        println!("\n📝 sgdkx Configuration: {}", config_path.display());
+        println!("SGDK Path     : {}", path);
+        println!("Version       : {}", version);
+
+        let toolchain = doc
+            .get("toolchain")
+            .and_then(|v| v.as_inline_table())
+            .and_then(|tbl| tbl.get("path"))
+            .and_then(|v| v.as_str());
+        match toolchain {
+            Some(tc) => println!("Toolchain     : {}", tc),
+            None => println!("Toolchain     : bundled (Windows)"),
+        }
 
         let commit = Command::new("git")
             .args(["rev-parse", "HEAD"])
@@ -48,47 +51,25 @@ pub fn run() {
             .ok()
             .and_then(|out| String::from_utf8(out.stdout).ok())
             .unwrap_or("Unknown".to_string());
-        println!("Commit ID   : {}", commit.trim());
+        println!("Commit ID     : {}", commit.trim());
 
-        // === Gens/Blastem Path Info 追加 ===
+        // BlastEm (the only supported emulator)
         let config_base = path::config_dir();
-
-        // Gens
-        let gens_path_config = doc
-            .get("emulator")
-            .and_then(|e| e.get("gens_path"))
-            .and_then(|v| v.as_str());
-        if let Some(path) = gens_path_config {
-            println!("Gens Path   : {}", path);
-        } else {
-            let gens_path_opt = find_emulator_executable(&config_base, "gens");
-            if let Some(gens_exe) = gens_path_opt {
-                println!("Gens Path   : {}", gens_exe.display());
-            } else {
-                println!("Gens Path   : Not installed");
-            }
-        }
-
-        // Blastem
-        let blastem_path_config = doc
+        let blastem = doc
             .get("emulator")
             .and_then(|e| e.get("blastem_path"))
-            .and_then(|v| v.as_str());
-        if let Some(path) = blastem_path_config {
-            println!("blastem Path: {}", path);
-        } else {
-            let blastem_path_opt = find_emulator_executable(&config_base, "blastem");
-            if let Some(blastem_exe) = blastem_path_opt {
-                println!(
-                    "blastem Path: {}",
-                    blastem_exe.display()
-                );
-            } else {
-                println!("blastem Path: Not installed");
-            }
+            .and_then(|v| v.as_str())
+            .map(|s| s.to_string())
+            .or_else(|| {
+                crate::commands::run::find_blastem(&config_base)
+                    .map(|p| p.to_string_lossy().to_string())
+            });
+        match blastem {
+            Some(p) => println!("BlastEm       : {}", p),
+            None => println!("BlastEm       : Not installed"),
         }
 
-        // === SGDK Document Info ===
+        // SGDK documentation
         let doc_index = Path::new(path).join("doc").join("html").join("index.html");
         if doc_index.exists() {
             println!(
@@ -110,68 +91,9 @@ pub fn run() {
 
 fn check_tool(tool: &str) {
     match which::which(tool) {
-        Ok(path) => println!(
-            "✅ {}: {}",
-            tool,
-            path.display()
-        ),
+        Ok(path) => println!("✅ {}: {}", tool, path.display()),
         Err(_) => println!("❌ {}: not found", tool),
     }
-}
-
-fn find_emulator_executable(config_dir: &Path, emulator: &str) -> Option<PathBuf> {
-    let emulator_dir = config_dir.join(emulator);
-
-    match emulator {
-        "gens" => {
-            // Look for gens.exe in various possible locations
-            let possible_paths = vec![
-                emulator_dir.join("gens.exe"),
-                emulator_dir.join("Gens_KMod_v0.7.3").join("gens.exe"),
-            ];
-
-            for path in possible_paths {
-                if path.exists() {
-                    return Some(path);
-                }
-            }
-        }
-        "blastem" => {
-            // Look for blastem.exe in various possible locations
-            let possible_paths = vec![emulator_dir.join("blastem.exe")];
-
-            // Also look for blastem-win64-* directories
-            if let Ok(entries) = fs::read_dir(&emulator_dir) {
-                for entry in entries {
-                    if let Ok(entry) = entry {
-                        let path = entry.path();
-                        if path.is_dir()
-                            && path
-                                .file_name()
-                                .unwrap()
-                                .to_str()
-                                .unwrap()
-                                .starts_with("blastem-win64")
-                        {
-                            let exe_path = path.join("blastem.exe");
-                            if exe_path.exists() {
-                                return Some(exe_path);
-                            }
-                        }
-                    }
-                }
-            }
-
-            for path in possible_paths {
-                if path.exists() {
-                    return Some(path);
-                }
-            }
-        }
-        _ => {}
-    }
-
-    None
 }
 
 fn show_help_output() {

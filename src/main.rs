@@ -2,6 +2,7 @@ use clap::{Parser, Subcommand};
 
 mod commands;
 mod path;
+mod release;
 use commands::doc;
 use commands::doctor;
 use commands::new;

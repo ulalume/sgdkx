@@ -41,21 +41,7 @@ pub fn run() {
                         fs::remove_dir_all(sgdk_dir).expect("Failed to remove SGDK directory");
                     }
                 }
-                // === ここから追加: エミュレータ(gens/blastem)も削除 ===
-                // config.tomlのパスを参照してgens/blastemディレクトリを削除
-                if let Some(gens_path) = doc
-                    .get("emulator")
-                    .and_then(|e| e.get("gens_path"))
-                    .and_then(|v| v.as_str())
-                {
-                    let gens_dir = std::path::Path::new(gens_path)
-                        .parent()
-                        .unwrap_or(std::path::Path::new(gens_path));
-                    if gens_dir.exists() {
-                        println!("Removing gens emulator: {}", gens_dir.display());
-                        fs::remove_dir_all(gens_dir).expect("Failed to remove gens directory");
-                    }
-                }
+                // also remove the BlastEm emulator directory
                 if let Some(blastem_path) = doc
                     .get("emulator")
                     .and_then(|e| e.get("blastem_path"))
