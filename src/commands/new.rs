@@ -60,11 +60,8 @@ pub fn run(args: &Args) {
     let toolchain = get_toolchain_path(&doc);
     create_makefile(&dest_path, &sgdk_path, toolchain.as_deref().map(Path::new));
 
-    // Check for compiledb and run it if available
-    println!("🔍 Checking for compiledb...");
-    if check_compiledb_available() {
-        run_compiledb_make(&dest_path);
-    }
+    // Generate compile_commands.json (no external compiledb dependency)
+    generate_compile_commands(&dest_path);
 }
 
 /// sample配下をdialoguerで辿ってテンプレート選択。srcがあれば確定。デフォルトはsample/basics/hello-world。
@@ -125,16 +122,62 @@ fn select_template_dialoguer(sgdk_path: &Path) -> PathBuf {
     }
 }
 
-pub fn check_compiledb_available() -> bool {
-    match which::which("compiledb") {
-        Ok(_) => {
-            println!("✅ compiledb found");
-            true
+/// Generate compile_commands.json by parsing `make -nwB` output (a make dry-run),
+/// so clangd / IntelliSense work without an external `compiledb` dependency.
+/// The compile flags are deterministic (from SGDK's common.mk).
+pub fn generate_compile_commands(project_path: &Path) {
+    println!("🔧 Generating compile_commands.json...");
+
+    let output = match std::process::Command::new("make")
+        .args(["-nwB"])
+        .current_dir(project_path)
+        .output()
+    {
+        Ok(o) => o,
+        Err(e) => {
+            eprintln!("⚠️  could not run make for compile_commands.json: {}", e);
+            return;
         }
-        Err(_) => {
-            println!("⚠️  compiledb was not found, source code analysis could not be performed");
-            false
+    };
+
+    let stdout = String::from_utf8_lossy(&output.stdout);
+    let dir = project_path
+        .canonicalize()
+        .unwrap_or_else(|_| project_path.to_path_buf());
+    let dir_str = dir.to_string_lossy().replace(r"\\?\", "");
+
+    let mut entries: Vec<serde_json::Value> = Vec::new();
+    for line in stdout.lines() {
+        let line = line.trim();
+        // keep real C compiles: gcc with `-c <src.c>`, excluding dependency-gen (`-E`)
+        if !(line.contains("gcc") && line.contains(" -c ") && !line.contains(" -E")) {
+            continue;
         }
+        let tokens: Vec<&str> = line.split_whitespace().collect();
+        let file = tokens
+            .iter()
+            .position(|t| *t == "-c")
+            .and_then(|i| tokens.get(i + 1))
+            .copied();
+        let file = match file {
+            Some(f) if f.ends_with(".c") => f,
+            _ => continue,
+        };
+        entries.push(serde_json::json!({
+            "directory": dir_str,
+            "command": line,
+            "file": file,
+        }));
+    }
+
+    if entries.is_empty() {
+        eprintln!("⚠️  no compile commands captured; compile_commands.json not written");
+        return;
+    }
+    let json = serde_json::to_string_pretty(&entries).unwrap();
+    match fs::write(project_path.join("compile_commands.json"), json) {
+        Ok(_) => println!("✅ compile_commands.json generated ({} entries)", entries.len()),
+        Err(e) => eprintln!("⚠️  failed to write compile_commands.json: {}", e),
     }
 }
 
@@ -157,39 +200,6 @@ pub fn get_toolchain_path(doc: &DocumentMut) -> Option<String> {
         .and_then(|tbl| tbl.get("path"))
         .and_then(|v| v.as_str())
         .map(|s| s.to_string())
-}
-
-pub fn run_compiledb_make(project_path: &Path) -> bool {
-    println!("🔧 Running compiledb make...");
-
-    let result = match std::process::Command::new("compiledb")
-        .arg("make")
-        .current_dir(project_path)
-        .output()
-    {
-        Ok(output) => {
-            if output.status.success() {
-                println!("✅ compiledb make completed successfully");
-                true
-            } else {
-                println!("❌ Failed to run compiledb make");
-                if !output.stderr.is_empty() {
-                    eprintln!("Error: {}", String::from_utf8_lossy(&output.stderr));
-                }
-                if !output.stdout.is_empty() {
-                    println!("Output: {}", String::from_utf8_lossy(&output.stdout));
-                }
-                false
-            }
-        }
-        Err(e) => {
-            println!("❌ Failed to run compiledb make");
-            eprintln!("Error executing compiledb: {}", e);
-            false
-        }
-    };
-
-    result
 }
 
 pub fn create_clangd_config(project_path: &Path) {

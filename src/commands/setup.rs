@@ -81,6 +81,15 @@ fn setup_native(config_dir: &Path, version: &str) {
         std::process::exit(1);
     }
 
+    // 4. prebuilt documentation (server-side doxygen), extracted into SGDK/doc/html
+    println!("📥 Downloading SGDK documentation...");
+    let docs_asset = format!("sgdk-docs-{}.tar.gz", tag);
+    let docs_url = release::asset_download_url(release::SGDK_NATIVE_REPO, &tag, &docs_asset);
+    match release::download_tar_gz(&docs_url, &sgdk_dir.join("doc")) {
+        Ok(_) => println!("✅ documentation installed: {}", sgdk_dir.join("doc/html").display()),
+        Err(e) => println!("⚠️  documentation not available ({e})"),
+    }
+
     write_config(config_dir, &sgdk_dir, &tag, Some(&toolchain_dir));
     println!("✅ SGDK setup complete: {}", sgdk_dir.display());
 }

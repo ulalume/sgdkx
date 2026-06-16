@@ -9,11 +9,9 @@ pub fn run() {
 
     println!("\n🩺 sgdkx Environment Check");
 
-    for tool in ["git", "make", "java", "compiledb"].iter() {
+    for tool in ["git", "make", "java"].iter() {
         check_tool(tool);
     }
-    // optional
-    check_tool("doxygen");
 
     let config_path = path::config_dir().join("config.toml");
 
