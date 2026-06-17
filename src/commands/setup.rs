@@ -15,41 +15,44 @@ pub struct Args {
 pub fn run(args: &Args) {
     let config_dir = path::config_dir();
     fs::create_dir_all(&config_dir).expect("Failed to create config directory");
-
-    #[cfg(not(target_os = "windows"))]
-    setup_native(&config_dir, &args.version);
-
-    #[cfg(target_os = "windows")]
-    setup_windows(&config_dir, &args.version);
+    setup(&config_dir, &args.version);
 }
 
-// --- Unix (macOS / Linux): native prebuilt toolchain + SGDK bundle ---
-#[cfg(not(target_os = "windows"))]
-fn setup_native(config_dir: &Path, version: &str) {
+// All platforms use the same download model. The only OS difference: on Unix the gcc
+// toolchain is a separately-cached component (reused across SGDK versions, put on PATH
+// with the `m68k-elf-` prefix); on Windows the toolchain is baked into the self-contained
+// SGDK bundle's `bin/` (common.mk's Windows branch expects every tool in `$(GDK)/bin`),
+// so there is no separate toolchain download and no `[toolchain]` entry in config.toml.
+fn setup(config_dir: &Path, version: &str) {
     let plat = release::platform();
 
-    // 1. gcc 13 toolchain — download once, reuse across SGDK versions
-    let toolchain_dir = config_dir.join("m68k-elf-toolchain");
-    if toolchain_dir.join("bin").is_dir() {
-        println!("✅ gcc toolchain already present: {}", toolchain_dir.display());
-    } else {
-        println!(
-            "📥 Downloading gcc {} toolchain ({})...",
-            release::TOOLCHAIN_GCC_VERSION, plat
-        );
-        let asset = format!(
-            "m68k-elf-toolchain-gcc{}-{}.tar.gz",
-            release::TOOLCHAIN_GCC_VERSION, plat
-        );
-        let url = release::asset_download_url(release::TOOLCHAIN_REPO, release::TOOLCHAIN_TAG, &asset);
-        if let Err(e) = release::download_tar_gz(&url, config_dir) {
-            eprintln!("❌ failed to fetch toolchain: {e}");
-            std::process::exit(1);
+    // 1. gcc 13 toolchain — Unix only (Windows bundles it inside the SGDK bundle's bin/).
+    #[cfg(not(target_os = "windows"))]
+    let toolchain_dir = {
+        let toolchain_dir = config_dir.join("m68k-elf-toolchain");
+        if toolchain_dir.join("bin").is_dir() {
+            println!("✅ gcc toolchain already present: {}", toolchain_dir.display());
+        } else {
+            println!(
+                "📥 Downloading gcc {} toolchain ({})...",
+                release::TOOLCHAIN_GCC_VERSION, plat
+            );
+            let asset = format!(
+                "m68k-elf-toolchain-gcc{}-{}.tar.gz",
+                release::TOOLCHAIN_GCC_VERSION, plat
+            );
+            let url =
+                release::asset_download_url(release::TOOLCHAIN_REPO, release::TOOLCHAIN_TAG, &asset);
+            if let Err(e) = release::download_tar_gz(&url, config_dir) {
+                eprintln!("❌ failed to fetch toolchain: {e}");
+                std::process::exit(1);
+            }
+            println!("✅ gcc toolchain installed: {}", toolchain_dir.display());
         }
-        println!("✅ gcc toolchain installed: {}", toolchain_dir.display());
-    }
+        toolchain_dir
+    };
 
-    // 1b. bundled minimal JRE (for rescomp/sizebnd) — download once, reuse
+    // 1b. bundled minimal JRE (for rescomp/sizebnd) — all platforms; download once, reuse
     let jre_dir = config_dir.join("jre");
     if jre_dir.join("bin").is_dir() {
         println!("✅ bundled JRE already present: {}", jre_dir.display());
@@ -109,67 +112,13 @@ fn setup_native(config_dir: &Path, version: &str) {
     } else {
         None
     };
+    // Unix: record the separate toolchain dir. Windows: toolchain lives in the SGDK
+    // bundle's bin/, so no `[toolchain]` entry (get_toolchain_path -> None).
+    #[cfg(not(target_os = "windows"))]
     write_config(config_dir, &sgdk_dir, &tag, Some(&toolchain_dir), jre_opt);
+    #[cfg(target_os = "windows")]
+    write_config(config_dir, &sgdk_dir, &tag, None, jre_opt);
     println!("✅ SGDK setup complete: {}", sgdk_dir.display());
-}
-
-// --- Windows: clone upstream SGDK (ships its own bundled toolchain) ---
-#[cfg(target_os = "windows")]
-fn setup_windows(config_dir: &Path, version: &str) {
-    use std::process::Command;
-    use which::which;
-
-    if which("git").is_err() {
-        eprintln!("❌ 'git' not found. Please install it.");
-        std::process::exit(1);
-    }
-    let target_dir = config_dir.join("SGDK");
-    if target_dir.exists() {
-        println!("🗑️  Removing existing SGDK: {}", target_dir.display());
-        fs::remove_dir_all(&target_dir).expect("Failed to remove existing SGDK directory");
-    }
-
-    let is_commit_id = {
-        let len = version.len();
-        len >= 7 && len <= 40 && version.chars().all(|c| c.is_ascii_hexdigit())
-    };
-
-    println!("📥 Cloning SGDK from GitHub...");
-    let status = if is_commit_id {
-        Command::new("git")
-            .args(["clone", "https://github.com/Stephane-D/SGDK", target_dir.to_str().unwrap()])
-            .status()
-            .expect("git clone failed")
-    } else {
-        Command::new("git")
-            .args([
-                "clone",
-                "--branch",
-                version,
-                "https://github.com/Stephane-D/SGDK",
-                target_dir.to_str().unwrap(),
-            ])
-            .status()
-            .expect("git clone failed")
-    };
-    if !status.success() {
-        eprintln!("❌ git clone failed");
-        std::process::exit(1);
-    }
-    if is_commit_id {
-        let co = Command::new("git")
-            .args(["checkout", version])
-            .current_dir(&target_dir)
-            .status()
-            .expect("git checkout failed");
-        if !co.success() {
-            eprintln!("❌ git checkout failed");
-            std::process::exit(1);
-        }
-    }
-
-    write_config(config_dir, &target_dir, version, None, None);
-    println!("✅ SGDK setup complete: {}", target_dir.display());
 }
 
 fn write_config(

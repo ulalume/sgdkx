@@ -70,7 +70,8 @@ pub fn load_config() -> DocumentMut {
 
 /// Prepend the SGDK build-tool directories to THIS process's PATH (inherited by the
 /// child make and its recipe commands). On Unix: bundled JRE, gcc toolchain, SGDK/bin.
-/// On Windows: SGDK/bin (bundled MSYS make.exe + sh/rm/cp/mkdir/dlls + gcc.exe).
+/// On Windows: bundled JRE (for `java`) + SGDK/bin (bundled MSYS make.exe +
+/// sh/rm/cp/mkdir/dlls + the m68k gcc.exe + native tools).
 ///
 /// We must modify the process PATH (not just the child's env) because on Windows the
 /// executable lookup for a bare `make` uses the calling process's PATH. Running make
@@ -98,8 +99,14 @@ pub fn prepend_tool_path(doc: &DocumentMut) {
     }
     #[cfg(target_os = "windows")]
     {
+        // bundled JRE provides `java` for rescomp/sizebnd (common.mk uses bare `java`);
+        // SGDK/bin provides make.exe + MSYS sh/rm/cp/mkdir + the bundled m68k gcc.exe +
+        // native tools (the self-contained download bundle, like upstream's layout).
+        if let Some(jre) = get_jre_path(doc) {
+            prepend.push(Path::new(&jre).join("bin"));
+        }
         prepend.push(sgdk_bin);
-        let _ = (get_jre_path(doc), get_toolchain_path(doc)); // not used on Windows
+        let _ = get_toolchain_path(doc); // unused on Windows (toolchain lives in SGDK/bin)
     }
 
     let mut paths = prepend;

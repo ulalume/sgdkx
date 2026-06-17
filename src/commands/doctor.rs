@@ -9,12 +9,11 @@ pub fn run() {
 
     println!("\n🩺 sgdkx Environment Check");
 
-    // On Unix, `make` is the system one (required). On Windows, make is bundled with
-    // SGDK (used via `sgdkx make`), and git is only needed for Windows setup (clone).
+    // On Unix, `make` is the system one (required). On Windows, make (and the whole
+    // toolchain + MSYS shell) is bundled in SGDK/bin and used via `sgdkx make`, so no
+    // system tool is required there.
     #[cfg(not(target_os = "windows"))]
     check_tool("make");
-    #[cfg(target_os = "windows")]
-    check_tool("git");
 
     let config_path = path::config_dir().join("config.toml");
 
@@ -60,20 +59,9 @@ pub fn run() {
             },
         }
 
-        // Commit ID is only meaningful on Windows (SGDK is a git clone there); the
-        // Unix native bundle ships without .git — its commit is encoded in the
-        // version tag (e.g. master-<sha>).
-        #[cfg(target_os = "windows")]
-        {
-            let commit = Command::new("git")
-                .args(["rev-parse", "HEAD"])
-                .current_dir(path)
-                .output()
-                .ok()
-                .and_then(|out| String::from_utf8(out.stdout).ok())
-                .unwrap_or("Unknown".to_string());
-            println!("Commit ID     : {}", commit.trim());
-        }
+        // No commit-id check: on all platforms SGDK is now a versioned prebuilt bundle
+        // shipped without .git — its commit is encoded in the version tag above
+        // (e.g. master-<sha>).
 
         // BlastEm (the only supported emulator)
         let config_base = path::config_dir();
@@ -111,6 +99,7 @@ pub fn run() {
     }
 }
 
+#[cfg(not(target_os = "windows"))] // only the Unix branch checks a system tool (`make`)
 fn check_tool(tool: &str) {
     match which::which(tool) {
         Ok(path) => println!("✅ {}: {}", tool, path.display()),

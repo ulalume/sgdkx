@@ -6,8 +6,13 @@ use std::path::Path;
 use std::process::Command;
 
 // --- component sources (pinned) ---
+// The toolchain is a separate download only on Unix; on Windows it's baked into the
+// SGDK bundle, so these three are unused there (silence the Windows-only dead_code lint).
+#[cfg_attr(target_os = "windows", allow(dead_code))]
 pub const TOOLCHAIN_REPO: &str = "ulalume/m68k-toolchain-builds";
+#[cfg_attr(target_os = "windows", allow(dead_code))]
 pub const TOOLCHAIN_TAG: &str = "gcc13.2.0-1";
+#[cfg_attr(target_os = "windows", allow(dead_code))]
 pub const TOOLCHAIN_GCC_VERSION: &str = "13.2.0";
 pub const SGDK_NATIVE_REPO: &str = "ulalume/sgdk-native-builds";
 pub const BLASTEM_REPO: &str = "ulalume/blastem-builds";
