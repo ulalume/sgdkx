@@ -48,7 +48,7 @@ pub fn run(_args: &Args) {
         std::process::exit(1);
     }
 
-    match crate::commands::run::find_blastem(&config_dir) {
+    match crate::commands::blastem::find_blastem(&config_dir) {
         Some(exe) => {
             let config_path = config_dir.join("config.toml");
             let mut doc = if config_path.exists() {

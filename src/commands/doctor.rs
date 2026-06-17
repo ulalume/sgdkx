@@ -82,7 +82,7 @@ pub fn run() {
             .and_then(|v| v.as_str())
             .map(|s| s.to_string())
             .or_else(|| {
-                crate::commands::run::find_blastem(&config_base)
+                crate::commands::blastem::find_blastem(&config_base)
                     .map(|p| p.to_string_lossy().to_string())
             });
         match blastem {

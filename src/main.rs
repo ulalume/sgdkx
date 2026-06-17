@@ -3,11 +3,12 @@ use clap::{Parser, Subcommand};
 mod commands;
 mod path;
 mod release;
+use commands::blastem;
 use commands::doc;
 use commands::doctor;
+use commands::make;
 use commands::new;
 use commands::open;
-use commands::run;
 use commands::setup;
 use commands::setup_emu;
 use commands::setup_web;
@@ -35,8 +36,11 @@ enum Commands {
     /// Create a new SGDK project
     New(new::Args),
 
-    /// Run ROM file with emulator
-    Run(run::Args),
+    /// Build the project: thin wrapper around make (args passed straight through)
+    Make(make::Args),
+
+    /// Run the bundled BlastEm (args passed straight through, e.g. out/rom.bin)
+    Blastem(blastem::Args),
 
     /// Setup web export template
     SetupWeb(setup_web::Args),
@@ -71,8 +75,11 @@ fn main() {
             Commands::New(args) => {
                 new::run(&args);
             }
-            Commands::Run(args) => {
-                run::run(args);
+            Commands::Make(args) => {
+                make::run(args);
+            }
+            Commands::Blastem(args) => {
+                blastem::run(args);
             }
             Commands::Uninstall => {
                 uninstall::run();

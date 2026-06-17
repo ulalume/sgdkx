@@ -6,39 +6,25 @@ use std::process::Command;
 
 #[derive(Parser)]
 pub struct Args {
-    /// ROM file path (defaults to out/rom.bin)
-    #[arg(long, default_value = "out/rom.bin")]
-    rom: String,
+    /// Arguments passed straight through to BlastEm (e.g. out/rom.bin)
+    #[arg(trailing_var_arg = true, allow_hyphen_values = true)]
+    args: Vec<String>,
 }
 
+/// Thin wrapper: locate the bundled BlastEm and exec it with the given args verbatim.
 pub fn run(args: &Args) {
-    let config_dir = path::config_dir();
-    let rom_path = &args.rom;
-
-    if !Path::new(rom_path).exists() {
-        eprintln!("ROM file not found: {}", rom_path);
-        std::process::exit(1);
-    }
-
-    let exe = match find_blastem(&config_dir) {
+    let exe = match find_blastem(&path::config_dir()) {
         Some(p) => p,
         None => {
             eprintln!("BlastEm not found. Please run 'sgdkx setup-emu' first.");
             std::process::exit(1);
         }
     };
-
-    let absolute_rom_path =
-        fs::canonicalize(rom_path).expect("Failed to get absolute path for ROM file");
-
-    println!("Running {} ...", exe.display());
     let status = Command::new(&exe)
-        .arg(&absolute_rom_path)
+        .args(&args.args)
         .status()
         .expect("Failed to run BlastEm");
-    if !status.success() {
-        eprintln!("BlastEm exited with error code: {:?}", status.code());
-    }
+    std::process::exit(status.code().unwrap_or(1));
 }
 
 /// Locate the native BlastEm executable under <config>/blastem, regardless of the
