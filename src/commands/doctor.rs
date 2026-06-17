@@ -9,8 +9,9 @@ pub fn run() {
 
     println!("\n🩺 sgdkx Environment Check");
 
-    // make is required to build. git is only needed for Windows setup (clone). The
-    // Java runtime is bundled (see "JRE" below), so system `java` is not required.
+    // On Unix, `make` is the system one (required). On Windows, make is bundled with
+    // SGDK (used via `sgdkx make`), and git is only needed for Windows setup (clone).
+    #[cfg(not(target_os = "windows"))]
     check_tool("make");
     #[cfg(target_os = "windows")]
     check_tool("git");

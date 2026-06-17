@@ -66,7 +66,10 @@ pub fn run(args: &Args) {
         jre.as_deref().map(Path::new),
     );
 
-    // Generate compile_commands.json (no external compiledb dependency)
+    // Generate compile_commands.json (no external compiledb dependency).
+    // Prepend the build-tool dirs to PATH so `make -nwB` resolves (esp. on Windows,
+    // where make is SGDK's bundled MSYS make.exe).
+    crate::commands::make::prepend_tool_path(&doc);
     generate_compile_commands(&dest_path);
 }
 
