@@ -37,8 +37,25 @@ fn http_client() -> reqwest::blocking::Client {
         .expect("failed to build HTTP client")
 }
 
-/// GET a URL and parse JSON (used for the GitHub REST API).
+/// GET a URL and parse JSON (used for the GitHub REST API), with retries.
 pub fn http_json(url: &str) -> Result<serde_json::Value, String> {
+    const ATTEMPTS: u32 = 3;
+    let mut last_err = String::new();
+    for attempt in 1..=ATTEMPTS {
+        match try_json(url) {
+            Ok(v) => return Ok(v),
+            Err(e) => {
+                last_err = e;
+                if attempt < ATTEMPTS {
+                    std::thread::sleep(std::time::Duration::from_secs(2));
+                }
+            }
+        }
+    }
+    Err(format!("{last_err} (after {ATTEMPTS} attempts)"))
+}
+
+fn try_json(url: &str) -> Result<serde_json::Value, String> {
     let resp = http_client()
         .get(url)
         .send()
@@ -49,17 +66,38 @@ pub fn http_json(url: &str) -> Result<serde_json::Value, String> {
     resp.json().map_err(|e| format!("invalid JSON from {url}: {e}"))
 }
 
-/// Download `url` to the file `dest`.
+/// Download `url` to the file `dest`, streaming to disk with retries (large release
+/// assets over flaky links otherwise fail with "error decoding response body").
 pub fn download_to(url: &str, dest: &Path) -> Result<(), String> {
-    let resp = http_client()
+    const ATTEMPTS: u32 = 4;
+    let mut last_err = String::new();
+    for attempt in 1..=ATTEMPTS {
+        match try_download(url, dest) {
+            Ok(()) => return Ok(()),
+            Err(e) => {
+                last_err = e;
+                if attempt < ATTEMPTS {
+                    eprintln!("  download attempt {attempt}/{ATTEMPTS} failed ({last_err}); retrying...");
+                    std::thread::sleep(std::time::Duration::from_secs(2 * attempt as u64));
+                }
+            }
+        }
+    }
+    let _ = std::fs::remove_file(dest);
+    Err(format!("{last_err} (after {ATTEMPTS} attempts)"))
+}
+
+fn try_download(url: &str, dest: &Path) -> Result<(), String> {
+    let mut resp = http_client()
         .get(url)
         .send()
-        .map_err(|e| format!("download failed: {e}"))?;
+        .map_err(|e| format!("request failed: {e}"))?;
     if !resp.status().is_success() {
         return Err(format!("HTTP {} for {url}", resp.status()));
     }
-    let bytes = resp.bytes().map_err(|e| format!("read failed: {e}"))?;
-    std::fs::write(dest, &bytes).map_err(|e| format!("write failed: {e}"))?;
+    let mut file = std::fs::File::create(dest).map_err(|e| format!("create failed: {e}"))?;
+    // stream the body to disk (low memory, fails fast on a dropped connection)
+    std::io::copy(&mut resp, &mut file).map_err(|e| format!("read failed: {e}"))?;
     Ok(())
 }
 
