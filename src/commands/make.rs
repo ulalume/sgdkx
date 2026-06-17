@@ -18,8 +18,8 @@ pub struct Args {
 /// those directories on PATH yourself.
 pub fn run(args: &Args) {
     let doc = load_config();
-    let status = base_make_command(&doc)
-        .args(&args.args)
+    let argv: Vec<&str> = args.args.iter().map(String::as_str).collect();
+    let status = make_command(&doc, &argv)
         .status()
         .unwrap_or_else(|e| {
             eprintln!("❌ failed to run make: {e}");
@@ -28,17 +28,32 @@ pub fn run(args: &Args) {
     std::process::exit(status.code().unwrap_or(1));
 }
 
-/// A `make` Command with PATH prepared. On Windows, force `MAKE=make` (a command-line
-/// variable assignment, highest precedence + exported to recipes) so make's restart
-/// and gcc's `-flto` parallel link spawn a clean, PATH-resolvable `make` instead of a
-/// quoted/absolute value the MSYS shell can't exec.
-pub fn base_make_command(doc: &DocumentMut) -> Command {
+/// Build a Command that runs `make <make_args>` with PATH prepared.
+///
+/// On Windows we run make *inside* SGDK's bundled MSYS `sh` (`sh -c "make ..."`).
+/// Launched directly via CreateProcess, MSYS make's self-restart (after generating the
+/// `.d` includes) and gcc `-flto`'s parallel make fail with quoted argv ('"make":
+/// Command not found'). Running under MSYS sh gives the native environment SGDK expects
+/// on Windows, where the restart/recursion work. On Unix we exec `make` directly.
+pub fn make_command(doc: &DocumentMut, make_args: &[&str]) -> Command {
     prepend_tool_path(doc);
-    #[allow(unused_mut)]
-    let mut c = Command::new("make");
     #[cfg(target_os = "windows")]
-    c.arg("MAKE=make");
-    c
+    {
+        let mut line = String::from("make");
+        for a in make_args {
+            line.push(' ');
+            line.push_str(a);
+        }
+        let mut c = Command::new("sh");
+        c.arg("-c").arg(line);
+        return c;
+    }
+    #[cfg(not(target_os = "windows"))]
+    {
+        let mut c = Command::new("make");
+        c.args(make_args);
+        return c;
+    }
 }
 
 pub fn load_config() -> DocumentMut {

@@ -135,8 +135,7 @@ fn select_template_dialoguer(sgdk_path: &Path) -> PathBuf {
 pub fn generate_compile_commands(doc: &DocumentMut, project_path: &Path) {
     println!("🔧 Generating compile_commands.json...");
 
-    let output = match crate::commands::make::base_make_command(doc)
-        .args(["-nwB"])
+    let output = match crate::commands::make::make_command(doc, &["-nwB"])
         .current_dir(project_path)
         .output()
     {
