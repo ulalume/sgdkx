@@ -18,8 +18,7 @@ pub struct Args {
 /// those directories on PATH yourself.
 pub fn run(args: &Args) {
     let doc = load_config();
-    prepend_tool_path(&doc);
-    let status = Command::new("make")
+    let status = base_make_command(&doc)
         .args(&args.args)
         .status()
         .unwrap_or_else(|e| {
@@ -27,6 +26,19 @@ pub fn run(args: &Args) {
             std::process::exit(1);
         });
     std::process::exit(status.code().unwrap_or(1));
+}
+
+/// A `make` Command with PATH prepared. On Windows, force `MAKE=make` (a command-line
+/// variable assignment, highest precedence + exported to recipes) so make's restart
+/// and gcc's `-flto` parallel link spawn a clean, PATH-resolvable `make` instead of a
+/// quoted/absolute value the MSYS shell can't exec.
+pub fn base_make_command(doc: &DocumentMut) -> Command {
+    prepend_tool_path(doc);
+    #[allow(unused_mut)]
+    let mut c = Command::new("make");
+    #[cfg(target_os = "windows")]
+    c.arg("MAKE=make");
+    c
 }
 
 pub fn load_config() -> DocumentMut {

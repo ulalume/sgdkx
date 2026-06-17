@@ -67,10 +67,8 @@ pub fn run(args: &Args) {
     );
 
     // Generate compile_commands.json (no external compiledb dependency).
-    // Prepend the build-tool dirs to PATH so `make -nwB` resolves (esp. on Windows,
-    // where make is SGDK's bundled MSYS make.exe).
-    crate::commands::make::prepend_tool_path(&doc);
-    generate_compile_commands(&dest_path);
+    // base_make_command sets up PATH so `make -nwB` resolves (esp. on Windows).
+    generate_compile_commands(&doc, &dest_path);
 }
 
 /// sample配下をdialoguerで辿ってテンプレート選択。srcがあれば確定。デフォルトはsample/basics/hello-world。
@@ -134,10 +132,10 @@ fn select_template_dialoguer(sgdk_path: &Path) -> PathBuf {
 /// Generate compile_commands.json by parsing `make -nwB` output (a make dry-run),
 /// so clangd / IntelliSense work without an external `compiledb` dependency.
 /// The compile flags are deterministic (from SGDK's common.mk).
-pub fn generate_compile_commands(project_path: &Path) {
+pub fn generate_compile_commands(doc: &DocumentMut, project_path: &Path) {
     println!("🔧 Generating compile_commands.json...");
 
-    let output = match std::process::Command::new("make")
+    let output = match crate::commands::make::base_make_command(doc)
         .args(["-nwB"])
         .current_dir(project_path)
         .output()
