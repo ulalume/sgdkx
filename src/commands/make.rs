@@ -39,10 +39,13 @@ pub fn make_command(doc: &DocumentMut, make_args: &[&str]) -> Command {
     prepend_tool_path(doc);
     #[cfg(target_os = "windows")]
     {
+        // Build `make <args>` for the MSYS sh. Single-quote each arg (escaping embedded single
+        // quotes the POSIX way: ' -> '\'') so args with spaces or shell metacharacters survive.
         let mut line = String::from("make");
         for a in make_args {
-            line.push(' ');
-            line.push_str(a);
+            line.push_str(" '");
+            line.push_str(&a.replace('\'', r"'\''"));
+            line.push('\'');
         }
         let mut c = Command::new("sh");
         c.arg("-c").arg(line);

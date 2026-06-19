@@ -70,7 +70,10 @@ fn main() {
             Commands::Uninstall(args) => uninstall::run(args),
         },
         None => {
-            // Run doctor (environment check) when no subcommand is specified.
+            // No subcommand: print help (via clap, no subprocess) then the doctor check.
+            use clap::CommandFactory;
+            let _ = Cli::command().print_help();
+            println!();
             doctor::run();
         }
     }

@@ -1,12 +1,10 @@
+use crate::commands::new::get_sgdk_config;
 use crate::path;
 use std::fs;
 use std::path::Path;
-use std::process::Command;
 use toml_edit::DocumentMut;
 
 pub fn run() {
-    show_help_output();
-
     println!("\n🩺 sgdkx Environment Check");
 
     // On Unix, `make` is the system one (required). On Windows, make (and the whole
@@ -20,15 +18,9 @@ pub fn run() {
     if config_path.exists() {
         let text = fs::read_to_string(&config_path).unwrap();
         let doc = text.parse::<DocumentMut>().unwrap();
-        let sgdk_table = doc.get("sgdk").and_then(|v| v.as_inline_table());
-        let path = sgdk_table
-            .and_then(|tbl| tbl.get("path"))
-            .and_then(|v| v.as_str())
-            .unwrap_or("Unknown");
-        let version = sgdk_table
-            .and_then(|tbl| tbl.get("version"))
-            .and_then(|v| v.as_str())
-            .unwrap_or("Unknown");
+        let (path_opt, version_opt) = get_sgdk_config(&doc);
+        let path = path_opt.unwrap_or("Unknown");
+        let version = version_opt.unwrap_or("Unknown");
 
         println!("\n📝 sgdkx Configuration: {}", config_path.display());
         println!("SGDK Path     : {}", path);
@@ -110,18 +102,5 @@ fn check_tool(tool: &str) {
     match which::which(tool) {
         Ok(path) => println!("✅ {}: {}", tool, path.display()),
         Err(_) => println!("❌ {}: not found", tool),
-    }
-}
-
-fn show_help_output() {
-    let exe = std::env::current_exe().unwrap_or_else(|_| "sgdkx".into());
-
-    let status = Command::new(exe)
-        .arg("help")
-        .status()
-        .expect("❌ Failed to execute sgdkx help");
-
-    if !status.success() {
-        eprintln!("⚠️  Failed to execute help command");
     }
 }

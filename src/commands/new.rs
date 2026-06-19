@@ -1,4 +1,3 @@
-use crate::path;
 use clap::Parser;
 use std::fs;
 use std::io::IsTerminal;
@@ -17,18 +16,9 @@ pub struct Args {
 
 pub fn run(args: &Args) {
     let name: &str = args.name.as_str();
-    let config_path = path::config_dir().join("config.toml");
 
-    // Check if config.toml exists
-    if !config_path.exists() {
-        eprintln!("❌ config.toml not found. Please run `sgdkx install` first.");
-        std::process::exit(1);
-    }
-
-    let text = fs::read_to_string(&config_path).expect("config.toml read failed");
-    let doc = text
-        .parse::<DocumentMut>()
-        .expect("TOML parse failed");
+    // Load config (shared loader; exits with an install hint if missing).
+    let doc = crate::commands::make::load_config();
     let (sgdk_path_str, _) = get_sgdk_config(&doc);
     let sgdk_path = Path::new(sgdk_path_str.unwrap_or_else(|| {
         eprintln!("SGDK path not found in config.toml.");
@@ -179,13 +169,14 @@ pub fn generate_compile_commands(doc: &DocumentMut, project_path: &Path) {
         if !(line.contains("gcc") && line.contains(" -c ") && !line.contains(" -E")) {
             continue;
         }
-        let tokens: Vec<&str> = line.split_whitespace().collect();
-        let file = tokens
-            .iter()
-            .position(|t| *t == "-c")
-            .and_then(|i| tokens.get(i + 1))
-            .copied();
-        let file = match file {
+        // The SGDK compile rule is `... -c <src> -o <obj>`. Take the argument BETWEEN ` -c `
+        // and ` -o ` so source paths containing spaces survive (split_whitespace would shatter
+        // them and capture only the first fragment).
+        let file = match line
+            .split_once(" -c ")
+            .and_then(|(_, rest)| rest.split_once(" -o "))
+            .map(|(f, _)| f.trim())
+        {
             Some(f) if f.ends_with(".c") => f,
             _ => continue,
         };
