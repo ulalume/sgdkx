@@ -2,142 +2,68 @@
 
 🇯🇵 日本語版 README は[こちら](./README.ja.md)をご覧ください。
 
-sgdkx is a CLI tool to support development with SGDK (Sega Genesis Development Kit).
+`sgdkx` is a native, cross-platform CLI for developing with [SGDK](https://github.com/Stephane-D/SGDK) (Sega Mega Drive / Genesis Development Kit).
+
+It downloads and manages a **self-contained** SGDK environment — SGDK, the m68k gcc toolchain, a bundled JRE, m68k-elf-gdb, and the BlastEm emulator — into a per-user directory. No system gcc, Java, Wine, or compiledb required.
 
 ## Installation
-
-### Install sgdkx (via cargo)
 
 ```sh
 cargo install sgdkx
 ```
 
-### Required Tools (macOS)
+To update sgdkx itself, run `cargo install sgdkx` again (or `cargo install-update -a` with [cargo-update](https://crates.io/crates/cargo-update)).
 
-The following tools are required. You can install them with Homebrew:
+### Requirements
 
-```sh
-brew install make openjdk compiledb
+- **macOS / Linux:** `make` (e.g. `brew install make`, `apt install make`). Everything else is downloaded by `sgdkx install`.
+- **Windows:** nothing — `make`, the toolchain, and the shell are all inside the downloaded SGDK bundle.
 
-brew tap homebrew/cask-versions
-brew install --cask --no-quarantine gcenx/wine/wine-crossover
+Run `sgdkx` with no command for an environment check (`doctor`).
 
-brew install doxygen # options
-```
-
-- `git` is usually pre-installed, but if not, install it with `brew install git`.
-- Running `sgdkx` with no command will perform an environment check and show if all required tools are installed.
-
-## Usage
-
-Main commands:
-
-- `sgdkx`<br>
-  Show environment check, SGDK/emulator configuration, and help message.
-
-- `sgdkx setup [--version <version>]` <br>
-  Download and install SGDK (Sega Genesis Development Kit).<br>
-  You can specify the version with `--version` (default: master).<br>
-  The `--version` option accepts a branch name, tag, or commit ID.<br>
-  Examples:<br>
-  - `--version V2.11` for tag V2.11
-  - `--version ef9292c0` for commit ID ef9292c0
-    The SGDK path and version are saved in config.toml.<br>
-    Additionally, **if doxygen is installed and SGDK documentation does not exist, documentation will be generated automatically.**
-
-- `sgdkx setup-emu [gens|blastem]`<br>
-  Download and install an emulator (Gens or BlastEm).<br>
-  The path to the emulator is saved in config.toml.
-
-- `sgdkx new <project_name>`<br>
-  Create a new project from the SGDK sample.
-
-- `sgdkx run [--emulator <gens|blastem>] [--rom <path>]`<br>
-  Run the ROM file with the specified emulator (default: gens or installed emulator).<br>
-  You can specify the emulator with `--emulator` and the ROM file path with `--rom` (default: `out/rom.bin`).
-
-- `sgdkx uninstall`<br>
-  Uninstall SGDK, remove configuration, and also delete any emulators (Gens/BlastEm) installed via `setup-emu` at the paths recorded in config.toml.
-
-- `sgdkx doc`<br>
-  If SGDK documentation exists, it will be opened in your browser.
-
-#### Experimental Features
-
-- `sgdkx setup-web`
-  Download a web emulator template for playing your ROM in a browser.
-
-- `sgdkx web-export [--rom <path>] [--dir <parent-dir>]`
-  Export your ROM and a web emulator template for browser-based play.
-  This command copies a web emulator template (HTML/JS/WASM) and your ROM into a new `web-export` directory under the specified parent directory (default: current directory).
-
-- `sgdkx web-server [--dir <directory>] [--port <port>]`
-  Serve the `web-export` directory using a built-in HTTP server (with COOP/COEP headers for WASM compatibility).
-  By default, it serves the `web-export` directory at `localhost:8080`. You can change the directory and port using the options.
-  Example: `sgdkx web-server --dir web-export --port 9000`
-
-### Simple Example
+## Quick start
 
 ```sh
-sgdkx setup --version v2.11 # stable
-sgdkx setup-emu
-sgdkx new your_project
-cd your_project
-make
-sgdkx run
+sgdkx install                  # download the environment (interactive version pick on a terminal)
+sgdkx new mygame               # scaffold a project (interactive template pick on a terminal)
+cd mygame
+sgdkx make                     # build -> out/rom.bin
+sgdkx blastem out/rom.bin      # run in BlastEm
 ```
 
-### Reference: Output when run without any command
+Non-interactive / scriptable (CI):
 
-```
-Unofficial tools for SGDK workflow
-
-Usage: sgdkx [COMMAND]
-
-Commands:
-  setup       Setup SGDK for development
-  setup-emu   Setup emulator for running ROM files
-  new         Create a new SGDK project
-  run         Run ROM file with emulator
-  setup-web   Setup web export template
-  web-export  Export ROM and web emulator template for web deployment
-  web-server  Serve web-export directory with HTTP server (with COOP/COEP headers)
-  doc         Show SGDK documentation status
-  open        Open SGDK installation directory
-  uninstall   Uninstall SGDK installation and configuration
-  help        Print this message or the help of the given subcommand(s)
-
-Options:
-  -h, --help     Print help
-  -V, --version  Print version
-
-🩺 sgdkx Environment Check
-✅ git: /opt/homebrew/bin/git
-✅ make: /usr/bin/make
-✅ java: /opt/homebrew/opt/openjdk/bin/java
-✅ compiledb: /opt/homebrew/bin/compiledb
-✅ doxygen: /opt/homebrew/bin/doxygen
-✅ wine: /opt/homebrew/bin/wine
-
-📝 sgdkx Configuration: /Users/[user]/.sgdkx/data/config.toml
-SGDK Path   : /Users/[user]/.sgdkx/data/SGDK
-Version     : v2.11
-Commit ID   : ef9292c03fe33a2f8af3a2589ab856a53dcef35c
-Gens Path   : /Users/[user]/.sgdkx/data/gens/gens.exe
-blastem Path: Not installed
-
-📄 SGDK documentation: /Users/[user]/.sgdkx/data/SGDK/doc/html/index.html
+```sh
+sgdkx install --sgdk v2.11 --blastem latest
+sgdkx new mygame --template basics/hello-world
+sgdkx make
 ```
 
-## Acknowledgements / Dependencies
+## Commands
+
+| Command | Description |
+|---|---|
+| `sgdkx install [-s/--sgdk <ver>] [-b/--blastem <ver>]` | Install/update the environment (SGDK, toolchain, JRE, gdb, BlastEm). Idempotent — re-run to update. Omitted versions prompt on a terminal, use latest when non-interactive. |
+| `sgdkx new <name> [-t/--template <path>]` | Scaffold a project from an SGDK sample (e.g. `basics/hello-world`). Prompts for a template on a terminal; `--template` is required when non-interactive. |
+| `sgdkx make [args...]` | Thin wrapper around `make` (args passed straight through, e.g. `debug`, `clean`). |
+| `sgdkx blastem [args...]` | Run the bundled BlastEm (e.g. `sgdkx blastem out/rom.bin`). |
+| `sgdkx gdb [args...]` | Run `m68k-elf-gdb` (e.g. `sgdkx gdb out/rom.out`, then `target remote :1234` against BlastEm's gdb stub). |
+| `sgdkx compile-commands [-p/--path <dir>]` | Regenerate `compile_commands.json` (for clangd / IDEs) after adding or removing source files. |
+| `sgdkx doc` | Open the SGDK documentation in your browser. |
+| `sgdkx open` | Open the installation directory. |
+| `sgdkx uninstall [-y/--yes]` | Remove the environment and configuration. `--yes` skips the confirmation (required when non-interactive). |
+| `sgdkx` | Environment check + configuration (the `doctor` default). |
+
+`compile_commands.json` is generated automatically by `sgdkx new`; run `sgdkx compile-commands` to refresh it later (it parses a `make -nwB` dry-run — no external `compiledb`).
+
+The environment and `config.toml` live under the per-user config directory (shown by `sgdkx` / `sgdkx open`).
+
+## Acknowledgements
 
 - [SGDK (by Stephane-D)](https://github.com/Stephane-D/SGDK)
-- [SGDK_wine (by Franticware)](https://github.com/Franticware/SGDK_wine)
-- [jgenesis (by James Groth)](https://github.com/jsgroth/jgenesis)
-
-Special thanks to these excellent projects.
+- [BlastEm (by Michael Pavone)](https://www.retrodev.com/blastem/)
 
 ## Notes
 
 - This tool is under active development.
-- This tool has not been thoroughly tested on Linux platforms. Linux users should proceed with caution.
+- **Breaking change in 0.3.0:** `setup` → `install`; `setup-emu` folded into `install`; the experimental `setup-web` / `web-export` / `web-server` commands were removed. See [CHANGELOG.md](./CHANGELOG.md).

@@ -1,144 +1,67 @@
 # sgdkx
 
-sgdkx は、SGDK（Sega Genesis Development Kit）を用いた開発を支援する CLI ツールです。
+`sgdkx` は、[SGDK](https://github.com/Stephane-D/SGDK)（Sega Mega Drive / Genesis Development Kit）開発を支援するネイティブなクロスプラットフォーム CLI です。
 
----
+SGDK・m68k gcc ツールチェーン・同梱 JRE・m68k-elf-gdb・BlastEm エミュレータを **自己完結** した環境としてユーザーごとのディレクトリにダウンロード・管理します。システムの gcc / Java / Wine / compiledb は不要です。
 
-## インストール方法
-
-### sgdkx のインストール（cargo）
+## インストール
 
 ```sh
 cargo install sgdkx
 ```
 
-### 必要なツールのインストール（macOS）
+sgdkx 自体の更新は、再度 `cargo install sgdkx` を実行してください（または [cargo-update](https://crates.io/crates/cargo-update) で `cargo install-update -a`）。
 
-以下のツールが必要です。Homebrew でインストールできます。
+### 必要なもの
 
-```sh
-brew install make openjdk compiledb
+- **macOS / Linux:** `make`（例: `brew install make` / `apt install make`）。それ以外は `sgdkx install` がダウンロードします。
+- **Windows:** 不要 — `make`・ツールチェーン・シェルはすべてダウンロードされる SGDK バンドルに含まれます。
 
-brew tap homebrew/cask-versions
-brew install --cask --no-quarantine gcenx/wine/wine-crossover
+引数なしで `sgdkx` を実行すると環境チェック（`doctor`）を表示します。
 
-brew install doxygen # options
-```
-
-- `git` は多くの場合プリインストールされていますが、必要に応じて `brew install git` でインストールしてください。
-- コマンドなしで実行すると、環境チェックが動作します。必要なツールがインストールされているか確認できます。
-
-## 使い方
-
-主なコマンドは以下の通りです。
-
-- `sgdkx`<br>
-  環境チェック・SGDK やエミュレータの設定状況・ヘルプを表示します。
-
-- `sgdkx setup [--version バージョン]`<br>
-  SGDK（Sega Genesis Development Kit）をダウンロード・インストールします。<br>
-  `--version` でブランチ名・タグ名・コミット ID（省略時は master）を指定できます。<br>
-  例:
-  - `--version V2.11` でタグ V2.11
-  - `--version ef9292c0` でコミット ID ef9292c0<br>
-    SGDK のパスやバージョンは config.toml に保存されます。<br>
-    さらに、**doxygen がインストールされていて SGDK ドキュメントが存在しない場合は、自動的にドキュメントを生成します。**
-
-- `sgdkx setup-emu [gens|blastem]`<br>
-  エミュレータ（gens または blastem）をダウンロード・セットアップします。<br>
-  インストールしたエミュレータのパスは config.toml に保存されます。
-
-- `sgdkx new <プロジェクト名>`<br>
-  SGDK サンプルから新しいプロジェクトを作成します。<br>
-
-- `sgdkx run [--emulator gens|blastem] [--rom パス]`
-  エミュレータで ROM ファイルを実行します。<br>
-  `--emulator` でエミュレータ（gens または blastem）、`--rom` で ROM ファイルのパスを指定できます（どちらも省略可能、デフォルトは自動検出/`out/rom.bin`）。
-
-- `sgdkx uninstall [--config-only]`
-  SGDK のアンインストールと設定ファイルの削除を行います。<br>
-  また、`setup-emu` でインストールしたエミュレータ（gens/blastem）も、config.toml に記載されたパスを参照して削除されます。
-
-- `sgdkx doc`
-  SGDK ドキュメントが存在すればブラウザで開きます。
-
-#### 実験的な機能
-
-- `sgdkx setup-web`
-  Webエミュレータ用テンプレートを設定します。
-
-- `sgdkx web-export [--rom <パス>] [--dir <親ディレクトリ>]`
-  ROMファイルとWebエミュレータ用テンプレートをエクスポートします。<br>
-  このコマンドはWebエミュレータのテンプレート（HTML/JS/WASM）とROMを指定ディレクトリ配下の `web-export` ディレクトリにコピーします。
-
-- `sgdkx web-server [--dir <ディレクトリ>] [--port <ポート>]`
-  `web-export` ディレクトリを組み込みHTTPサーバで公開します（WASM対応のCOOP/COEPヘッダ付き）。<br>
-  デフォルトでは `web-export` ディレクトリを `localhost:8080` で公開します。<br>
-  ディレクトリやポートはオプションで変更できます。<br>
-  例: `sgdkx web-server --dir web-export --port 9000`
-
-### 簡単な使い方例
+## クイックスタート
 
 ```sh
-sgdkx setup --version v2.11 # stable
-sgdkx setup-emu
-sgdkx new your_project
-cd your_project
-make
-sgdkx run
+sgdkx install                  # 環境をダウンロード（端末ではバージョンを対話選択）
+sgdkx new mygame               # プロジェクト雛形を生成（端末ではテンプレートを対話選択）
+cd mygame
+sgdkx make                     # ビルド -> out/rom.bin
+sgdkx blastem out/rom.bin      # BlastEm で実行
 ```
 
-### 参考: コマンドなしで実行した場合の出力例
+非対話・スクリプト（CI）向け:
 
-```
-Unofficial tools for SGDK workflow
-
-Usage: sgdkx [COMMAND]
-
-Commands:
-  setup       Setup SGDK for development
-  setup-emu   Setup emulator for running ROM files
-  new         Create a new SGDK project
-  run         Run ROM file with emulator
-  setup-web   Setup web export template
-  web-export  Export ROM and web emulator template for web deployment
-  web-server  Serve web-export directory with HTTP server (with COOP/COEP headers)
-  doc         Show SGDK documentation status
-  open        Open SGDK installation directory
-  uninstall   Uninstall SGDK installation and configuration
-  help        Print this message or the help of the given subcommand(s)
-
-Options:
-  -h, --help     Print help
-  -V, --version  Print version
-
-🩺 sgdkx Environment Check
-✅ git: /opt/homebrew/bin/git
-✅ make: /usr/bin/make
-✅ java: /opt/homebrew/opt/openjdk/bin/java
-✅ compiledb: /opt/homebrew/bin/compiledb
-✅ doxygen: /opt/homebrew/bin/doxygen
-✅ wine: /opt/homebrew/bin/wine
-
-📝 sgdkx Configuration: /Users/[user]/.sgdkx/data/config.toml
-SGDK Path   : /Users/[user]/.sgdkx/data/SGDK
-Version     : v2.11
-Commit ID   : ef9292c03fe33a2f8af3a2589ab856a53dcef35c
-Gens Path   : /Users/[user]/.sgdkx/data/gens/gens.exe
-blastem Path: Not installed
-
-📄 SGDK documentation: /Users/[user]/.sgdkx/data/SGDK/doc/html/index.html
+```sh
+sgdkx install --sgdk v2.11 --blastem latest
+sgdkx new mygame --template basics/hello-world
+sgdkx make
 ```
 
-## 謝辞・依存プロジェクト
+## コマンド一覧
+
+| コマンド | 説明 |
+|---|---|
+| `sgdkx install [-s/--sgdk <ver>] [-b/--blastem <ver>]` | 環境のインストール/更新（SGDK・ツールチェーン・JRE・gdb・BlastEm）。冪等で、再実行が更新になります。バージョン未指定時は端末で対話選択、非対話では最新。 |
+| `sgdkx new <name> [-t/--template <path>]` | SGDK サンプル（例 `basics/hello-world`）から雛形生成。端末ではテンプレートを対話選択、非対話では `--template` が必須。 |
+| `sgdkx make [args...]` | `make` の薄いラッパー（引数はそのまま渡す。例 `debug`・`clean`）。 |
+| `sgdkx blastem [args...]` | 同梱 BlastEm を実行（例 `sgdkx blastem out/rom.bin`）。 |
+| `sgdkx gdb [args...]` | `m68k-elf-gdb` を実行（例 `sgdkx gdb out/rom.out` の後、BlastEm の gdb スタブへ `target remote :1234`）。 |
+| `sgdkx compile-commands [-p/--path <dir>]` | ソース構成変更後に `compile_commands.json`（clangd / IDE 用）を再生成。 |
+| `sgdkx doc` | SGDK ドキュメントをブラウザで開く。 |
+| `sgdkx open` | インストールディレクトリを開く。 |
+| `sgdkx uninstall [-y/--yes]` | 環境と設定を削除。`--yes` で確認を省略（非対話では必須）。 |
+| `sgdkx` | 環境チェック + 設定表示（`doctor` の既定動作）。 |
+
+`compile_commands.json` は `sgdkx new` 時に自動生成されます。後から `sgdkx compile-commands` で再生成できます（`make -nwB` のドライランを解析。外部 `compiledb` は不要）。
+
+環境と `config.toml` はユーザーごとの設定ディレクトリ配下にあります（`sgdkx` / `sgdkx open` で確認可能）。
+
+## 謝辞
 
 - [SGDK (by Stephane-D)](https://github.com/Stephane-D/SGDK)
-- [SGDK_wine (by Franticware)](https://github.com/Franticware/SGDK_wine)
-- [jgenesis (by James Groth)](https://github.com/jsgroth/jgenesis)
+- [BlastEm (by Michael Pavone)](https://www.retrodev.com/blastem/)
 
-これらの素晴らしいプロジェクトに感謝します。
+## 備考
 
-## 注意事項
-
-- このツールは開発中です。
-- Linuxでのテストが十分に行えていないため、Linuxユーザーの方はご注意ください。
+- 本ツールは活発に開発中です。
+- **0.3.0 の破壊的変更:** `setup` → `install`、`setup-emu` を `install` に統合、実験的な `setup-web` / `web-export` / `web-server` を削除しました。詳細は [CHANGELOG.md](./CHANGELOG.md) を参照。

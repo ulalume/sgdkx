@@ -1,0 +1,47 @@
+# Changelog
+
+## 0.4.0
+
+CLI cleanup toward a thin, consistent, scriptable tool.
+
+### Breaking
+
+- **`setup` → `install`.** The command that downloads/configures the environment is now
+  `sgdkx install`, paired symmetrically with `uninstall`. It is idempotent — re-running it is
+  the supported way to *update* the environment.
+- **`setup-emu` removed.** BlastEm is now downloaded as part of `sgdkx install` (no separate
+  command).
+- **Web export removed.** The experimental `setup-web`, `web-export`, and `web-server` commands
+  were removed (to be redesigned). This also drops the `tokio`/`hyper` async dependency stack.
+
+### Added
+
+- **`sgdkx compile-commands [-p/--path <dir>]`** — regenerate `compile_commands.json` after
+  adding/removing sources (parses a `make -nwB` dry-run; no external `compiledb`).
+- **Version selection for `install`:** `-s/--sgdk <ver>` and `-b/--blastem <ver>`. When omitted,
+  an interactive picker opens on a terminal; the latest is used when non-interactive.
+
+### Changed
+
+- **Non-interactive friendly (TTY-aware):**
+  - `sgdkx new <name>` gains `-t/--template <path>` — interactive pick on a terminal, required
+    (errors instead of hanging) when non-interactive.
+  - `sgdkx uninstall` gains `-y/--yes` — required (errors instead of hanging) when non-interactive.
+- Dependencies updated (toml_edit 0.25, reqwest 0.13, zip 8, dialoguer 0.12, + `cargo update`);
+  removed unused `sevenz-rust`, `regex`, and `serde`.
+
+### System requirements
+
+- No Gens, no Wine, no system `compiledb`, no system Java, no system gcc. On Unix only `make` is
+  required; on Windows nothing (all bundled). `git`/`doxygen` are no longer needed.
+
+## 0.3.0
+
+### Added
+
+- **`sgdkx gdb [args...]`** — thin pass-through to `m68k-elf-gdb` (debug a ROM against BlastEm's
+  gdb remote stub). gdb is downloaded per platform by `install`.
+
+### Changed
+
+- `--version` now tracks the crate version automatically.
