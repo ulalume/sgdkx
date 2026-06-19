@@ -29,14 +29,6 @@ sgdkx make                     # build -> out/rom.bin
 sgdkx blastem out/rom.bin      # run in BlastEm
 ```
 
-Non-interactive / scriptable (CI):
-
-```sh
-sgdkx install --sgdk v2.11 --blastem latest
-sgdkx new mygame --template basics/hello-world
-sgdkx make
-```
-
 ## Commands
 
 | Command                                                | Description                                                                                                                                                                                         |
@@ -45,14 +37,14 @@ sgdkx make
 | `sgdkx new <name> [-t/--template <path>]`              | Scaffold a project from an SGDK sample (e.g. `basics/hello-world`). Prompts for a template on a terminal; `--template` is required when non-interactive.                                            |
 | `sgdkx make [args...]`                                 | Thin wrapper around `make` (args passed straight through, e.g. `debug`, `clean`). Exports `GDK` and the toolchain `PATH`, so the project's generated `Makefile` is portable and **safe to commit**. |
 | `sgdkx blastem [args...]`                              | Run the bundled BlastEm (e.g. `sgdkx blastem out/rom.bin`).                                                                                                                                         |
-| `sgdkx gdb [args...]`                                  | Run `m68k-elf-gdb` (e.g. `sgdkx gdb out/rom.out`, then `target remote :1234` against BlastEm's gdb stub).                                                                                           |
+| `sgdkx gdb [args...]`                                  | Run `m68k-elf-gdb` (args passed straight through, e.g. `sgdkx gdb out/rom.out`).                                                                                                                    |
 | `sgdkx compile-commands [-p/--path <dir>]`             | Regenerate `compile_commands.json` (for clangd / IDEs) after adding or removing source files.                                                                                                       |
 | `sgdkx doc`                                            | Open the SGDK documentation in your browser.                                                                                                                                                        |
 | `sgdkx open`                                           | Open the installation directory.                                                                                                                                                                    |
 | `sgdkx uninstall [-y/--yes]`                           | Remove the environment and configuration. `--yes` skips the confirmation (required when non-interactive).                                                                                           |
 | `sgdkx`                                                | Environment check + configuration (the `doctor` default).                                                                                                                                           |
 
-`compile_commands.json` is generated automatically by `sgdkx new`; run `sgdkx compile-commands` to refresh it later (it parses a `make -nwB` dry-run — no external `compiledb`).
+`compile_commands.json` is generated automatically by `sgdkx new`; run `sgdkx compile-commands` to refresh it later (it parses `make -nwB` output — no external `compiledb`).
 
 The environment and `config.toml` live under `~/.sgdkx/data` (the same on macOS, Linux, and Windows; shown by `sgdkx` / `sgdkx open`).
 
@@ -64,4 +56,4 @@ The environment and `config.toml` live under `~/.sgdkx/data` (the same on macOS,
 ## Notes
 
 - This tool is under active development.
-- **Breaking change in 0.3.0:** `setup` → `install`; `setup-emu` folded into `install`; the experimental `setup-web` / `web-export` / `web-server` commands were removed. See [CHANGELOG.md](./CHANGELOG.md).
+- **Breaking change in 0.4.0:** `setup` → `install`; `setup-emu` folded into `install`; the experimental `setup-web` / `web-export` / `web-server` commands were removed.

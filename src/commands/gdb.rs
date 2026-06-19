@@ -10,9 +10,8 @@ pub struct Args {
     args: Vec<String>,
 }
 
-/// Thin wrapper: locate the m68k gdb and exec it with the given args verbatim.
-/// Typical use: debug a ROM against BlastEm's gdb remote stub
-/// (`sgdkx gdb out/rom.out` then `target remote :1234` inside gdb).
+/// Thin wrapper: locate the m68k gdb and exec it with the given args verbatim
+/// (e.g. `sgdkx gdb out/rom.out`).
 pub fn run(args: &Args) {
     let exe = match find_gdb(&path::config_dir()) {
         Some(p) => p,

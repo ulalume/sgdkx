@@ -49,8 +49,8 @@ CLI cleanup toward a thin, consistent, scriptable tool.
 
 ### Added
 
-- **`sgdkx gdb [args...]`** — thin pass-through to `m68k-elf-gdb` (debug a ROM against BlastEm's
-  gdb remote stub). gdb is downloaded per platform by `install`.
+- **`sgdkx gdb [args...]`** — thin pass-through to `m68k-elf-gdb`. gdb is downloaded per platform
+  by `install`.
 
 ### Changed
 
