@@ -1,6 +1,7 @@
 pub mod blastem;
 pub mod doc;
 pub mod doctor;
+pub mod gdb;
 pub mod make;
 pub mod new;
 pub mod open;

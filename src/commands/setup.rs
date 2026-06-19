@@ -52,6 +52,25 @@ fn setup(config_dir: &Path, version: &str) {
         toolchain_dir
     };
 
+    // 1c. m68k-elf-gdb (debugger) — Unix only; on Windows gdb.exe ships inside the SGDK
+    // bundle's bin/. Version-independent (reused across SGDK versions); download once.
+    // Non-fatal: a missing gdb only disables `sgdkx gdb`, it must not break the rest of setup.
+    #[cfg(not(target_os = "windows"))]
+    {
+        let gdb_dir = config_dir.join("m68k-elf-gdb");
+        if gdb_dir.join("bin").is_dir() {
+            println!("✅ m68k-elf-gdb already present: {}", gdb_dir.display());
+        } else {
+            println!("📥 Downloading m68k-elf-gdb {} ({})...", release::GDB_VERSION, plat);
+            let asset = format!("m68k-elf-gdb-{}-{}.tar.gz", release::GDB_VERSION, plat);
+            let url = release::asset_download_url(release::GDB_REPO, release::GDB_TAG, &asset);
+            match release::download_tar_gz(&url, config_dir) {
+                Ok(_) => println!("✅ m68k-elf-gdb installed: {}", gdb_dir.display()),
+                Err(e) => println!("⚠️  m68k-elf-gdb unavailable ({e}); `sgdkx gdb` will not work"),
+            }
+        }
+    }
+
     // 1b. bundled minimal JRE (for rescomp/sizebnd) — all platforms; download once, reuse
     let jre_dir = config_dir.join("jre");
     if jre_dir.join("bin").is_dir() {

@@ -79,6 +79,12 @@ pub fn run() {
             None => println!("BlastEm       : Not installed"),
         }
 
+        // m68k-elf-gdb (Unix: downloaded by setup; Windows: gdb.exe in the SGDK bundle)
+        match crate::commands::gdb::find_gdb(&config_base) {
+            Some(p) => println!("GDB           : {}", p.display()),
+            None => println!("GDB           : Not installed"),
+        }
+
         // SGDK documentation
         let doc_index = Path::new(path).join("doc").join("html").join("index.html");
         if doc_index.exists() {

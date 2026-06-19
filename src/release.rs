@@ -14,6 +14,14 @@ pub const TOOLCHAIN_REPO: &str = "ulalume/m68k-toolchain-builds";
 pub const TOOLCHAIN_TAG: &str = "gcc13.2.0-1";
 #[cfg_attr(target_os = "windows", allow(dead_code))]
 pub const TOOLCHAIN_GCC_VERSION: &str = "13.2.0";
+// m68k-elf-gdb (debugger) — a separate download on Unix only; on Windows gdb.exe ships inside
+// the SGDK bundle's bin/ (upstream's), so these are unused there.
+#[cfg_attr(target_os = "windows", allow(dead_code))]
+pub const GDB_REPO: &str = "ulalume/m68k-toolchain-builds";
+#[cfg_attr(target_os = "windows", allow(dead_code))]
+pub const GDB_TAG: &str = "gdb16.2-1";
+#[cfg_attr(target_os = "windows", allow(dead_code))]
+pub const GDB_VERSION: &str = "16.2";
 pub const SGDK_NATIVE_REPO: &str = "ulalume/sgdk-native-builds";
 pub const BLASTEM_REPO: &str = "ulalume/blastem-builds";
 pub const JRE_REPO: &str = "ulalume/jre-builds";

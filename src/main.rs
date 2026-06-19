@@ -6,6 +6,7 @@ mod release;
 use commands::blastem;
 use commands::doc;
 use commands::doctor;
+use commands::gdb;
 use commands::make;
 use commands::new;
 use commands::open;
@@ -19,7 +20,7 @@ use commands::web_server;
 /// Unofficial tools for SGDK workflow
 #[derive(Parser)]
 #[command(name = "sgdkx")]
-#[command(version = "0.1.3")]
+#[command(version = env!("CARGO_PKG_VERSION"))]
 struct Cli {
     #[command(subcommand)]
     command: Option<Commands>,
@@ -41,6 +42,9 @@ enum Commands {
 
     /// Run the bundled BlastEm (args passed straight through, e.g. out/rom.bin)
     Blastem(blastem::Args),
+
+    /// Run m68k-elf-gdb (args passed straight through, e.g. out/rom.out)
+    Gdb(gdb::Args),
 
     /// Setup web export template
     SetupWeb(setup_web::Args),
@@ -80,6 +84,9 @@ fn main() {
             }
             Commands::Blastem(args) => {
                 blastem::run(args);
+            }
+            Commands::Gdb(args) => {
+                gdb::run(args);
             }
             Commands::Uninstall => {
                 uninstall::run();
