@@ -28,34 +28,14 @@ pub fn run(args: &Args) {
     std::process::exit(status.code().unwrap_or(1));
 }
 
-/// Locate the m68k gdb.
-/// Unix: `<config>/m68k-elf-gdb/bin/m68k-elf-gdb` (downloaded by `sgdkx setup`).
-/// Windows: `gdb.exe` in the SGDK bundle's `bin/` (shipped inside the bundle, like the rest
-/// of the Windows toolchain).
+/// Locate the m68k gdb downloaded by `sgdkx setup`:
+/// `<config>/m68k-elf-gdb/bin/m68k-elf-gdb[.exe]` (a standalone download on every OS).
 pub fn find_gdb(config_dir: &Path) -> Option<PathBuf> {
-    #[cfg(not(target_os = "windows"))]
-    {
-        let exe = config_dir
-            .join("m68k-elf-gdb")
-            .join("bin")
-            .join("m68k-elf-gdb");
-        exe.exists().then_some(exe)
-    }
-    #[cfg(target_os = "windows")]
-    {
-        let _ = config_dir;
-        // gdb.exe lives in the SGDK bundle's bin/ — read its path from config.toml.
-        use toml_edit::DocumentMut;
-        let doc = std::fs::read_to_string(path::config_dir().join("config.toml"))
-            .ok()?
-            .parse::<DocumentMut>()
-            .ok()?;
-        let sgdk = doc
-            .get("sgdk")
-            .and_then(|v| v.as_inline_table())
-            .and_then(|t| t.get("path"))
-            .and_then(|v| v.as_str())?;
-        let exe = Path::new(sgdk).join("bin").join("gdb.exe");
-        exe.exists().then_some(exe)
-    }
+    let exe_name = if cfg!(target_os = "windows") {
+        "m68k-elf-gdb.exe"
+    } else {
+        "m68k-elf-gdb"
+    };
+    let exe = config_dir.join("m68k-elf-gdb").join("bin").join(exe_name);
+    exe.exists().then_some(exe)
 }

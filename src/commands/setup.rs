@@ -52,10 +52,9 @@ fn setup(config_dir: &Path, version: &str) {
         toolchain_dir
     };
 
-    // 1c. m68k-elf-gdb (debugger) — Unix only; on Windows gdb.exe ships inside the SGDK
-    // bundle's bin/. Version-independent (reused across SGDK versions); download once.
-    // Non-fatal: a missing gdb only disables `sgdkx gdb`, it must not break the rest of setup.
-    #[cfg(not(target_os = "windows"))]
+    // 1c. m68k-elf-gdb (debugger) — a standalone download on every OS (incl. Windows; it is not
+    // a build tool, so it is not part of the SGDK bundle). Version-independent (reused across SGDK
+    // versions); download once. Non-fatal: a missing gdb only disables `sgdkx gdb`.
     {
         let gdb_dir = config_dir.join("m68k-elf-gdb");
         if gdb_dir.join("bin").is_dir() {
