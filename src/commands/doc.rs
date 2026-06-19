@@ -41,6 +41,6 @@ pub fn run() {
     if which("doxygen").is_err() {
         println!("❗ The doxygen command was not found. Please install doxygen.");
     } else {
-        println!("❗ SGDK documentation was not found. Please run setup again to generate it.");
+        println!("❗ SGDK documentation was not found. Please run `sgdkx install` again to fetch it.");
     }
 }

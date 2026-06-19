@@ -52,14 +52,14 @@ pub fn make_command(doc: &DocumentMut, make_args: &[&str]) -> Command {
     {
         let mut c = Command::new("make");
         c.args(make_args);
-        return c;
+        c
     }
 }
 
 pub fn load_config() -> DocumentMut {
     let config_path = path::config_dir().join("config.toml");
     if !config_path.exists() {
-        eprintln!("❌ config.toml not found. Please run `sgdkx setup` first.");
+        eprintln!("❌ config.toml not found. Please run `sgdkx install` first.");
         std::process::exit(1);
     }
     fs::read_to_string(&config_path)

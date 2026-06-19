@@ -4,18 +4,15 @@ mod commands;
 mod path;
 mod release;
 use commands::blastem;
+use commands::compile_commands;
 use commands::doc;
 use commands::doctor;
 use commands::gdb;
+use commands::install;
 use commands::make;
 use commands::new;
 use commands::open;
-use commands::setup;
-use commands::setup_emu;
-use commands::setup_web;
 use commands::uninstall;
-use commands::web_export;
-use commands::web_server;
 
 /// Unofficial tools for SGDK workflow
 #[derive(Parser)]
@@ -28,11 +25,8 @@ struct Cli {
 
 #[derive(Subcommand)]
 enum Commands {
-    /// Setup SGDK for development
-    Setup(setup::Args),
-
-    /// Setup emulator for running ROM files
-    SetupEmu(setup_emu::Args),
+    /// Install/update the self-contained SGDK environment (SGDK, toolchain, JRE, gdb, BlastEm)
+    Install(install::Args),
 
     /// Create a new SGDK project
     New(new::Args),
@@ -46,23 +40,18 @@ enum Commands {
     /// Run m68k-elf-gdb (args passed straight through, e.g. out/rom.out)
     Gdb(gdb::Args),
 
-    /// Setup web export template
-    SetupWeb(setup_web::Args),
-
-    /// Export ROM and web emulator template for web deployment
-    WebExport(web_export::Args),
-
-    /// Serve web-export directory with HTTP server (with COOP/COEP headers)
-    WebServer(web_server::Args),
+    /// Regenerate compile_commands.json (e.g. after adding/removing source files)
+    #[allow(clippy::enum_variant_names)] // name must stay for the `compile-commands` command
+    CompileCommands(compile_commands::Args),
 
     /// Show SGDK documentation status
     Doc,
 
-    /// Open SGDK installation directory
+    /// Open the SGDK installation directory
     Open(open::Args),
 
-    /// Uninstall SGDK installation and configuration
-    Uninstall,
+    /// Uninstall the SGDK environment and configuration
+    Uninstall(uninstall::Args),
 }
 
 fn main() {
@@ -70,45 +59,18 @@ fn main() {
 
     match &cli.command {
         Some(cmd) => match cmd {
-            Commands::Setup(args) => {
-                setup::run(&args);
-            }
-            Commands::SetupEmu(args) => {
-                setup_emu::run(&args);
-            }
-            Commands::New(args) => {
-                new::run(&args);
-            }
-            Commands::Make(args) => {
-                make::run(args);
-            }
-            Commands::Blastem(args) => {
-                blastem::run(args);
-            }
-            Commands::Gdb(args) => {
-                gdb::run(args);
-            }
-            Commands::Uninstall => {
-                uninstall::run();
-            }
-            Commands::Doc => {
-                doc::run();
-            }
-            Commands::WebExport(args) => {
-                web_export::run(args);
-            }
-            Commands::WebServer(args) => {
-                web_server::run(args);
-            }
-            Commands::Open(args) => {
-                open::run(args);
-            }
-            Commands::SetupWeb(args) => {
-                setup_web::run(args);
-            }
+            Commands::Install(args) => install::run(args),
+            Commands::New(args) => new::run(args),
+            Commands::Make(args) => make::run(args),
+            Commands::Blastem(args) => blastem::run(args),
+            Commands::Gdb(args) => gdb::run(args),
+            Commands::CompileCommands(args) => compile_commands::run(args),
+            Commands::Doc => doc::run(),
+            Commands::Open(args) => open::run(args),
+            Commands::Uninstall(args) => uninstall::run(args),
         },
         None => {
-            // Run doctor command when no subcommand is specified
+            // Run doctor (environment check) when no subcommand is specified.
             doctor::run();
         }
     }

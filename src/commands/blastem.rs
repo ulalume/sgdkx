@@ -16,7 +16,7 @@ pub fn run(args: &Args) {
     let exe = match find_blastem(&path::config_dir()) {
         Some(p) => p,
         None => {
-            eprintln!("BlastEm not found. Please run 'sgdkx setup-emu' first.");
+            eprintln!("BlastEm not found. Please run `sgdkx install` first.");
             std::process::exit(1);
         }
     };

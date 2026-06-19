@@ -101,7 +101,7 @@ pub fn run() {
             println!("⚠️  SGDK documentation not found.");
         }
     } else {
-        println!("\n❌ config.toml not found. Please run `sgdkx setup`.");
+        println!("\n❌ config.toml not found. Please run `sgdkx install`.");
     }
 }
 

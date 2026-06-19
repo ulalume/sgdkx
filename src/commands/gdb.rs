@@ -17,7 +17,7 @@ pub fn run(args: &Args) {
     let exe = match find_gdb(&path::config_dir()) {
         Some(p) => p,
         None => {
-            eprintln!("❌ m68k-elf-gdb not found. Run `sgdkx setup` to download it.");
+            eprintln!("❌ m68k-elf-gdb not found. Run `sgdkx install` to download it.");
             std::process::exit(1);
         }
     };
@@ -28,7 +28,7 @@ pub fn run(args: &Args) {
     std::process::exit(status.code().unwrap_or(1));
 }
 
-/// Locate the m68k gdb downloaded by `sgdkx setup`:
+/// Locate the m68k gdb downloaded by `sgdkx install`:
 /// `<config>/m68k-elf-gdb/bin/m68k-elf-gdb[.exe]` (a standalone download on every OS).
 pub fn find_gdb(config_dir: &Path) -> Option<PathBuf> {
     let exe_name = if cfg!(target_os = "windows") {

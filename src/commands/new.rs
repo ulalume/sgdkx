@@ -1,6 +1,7 @@
 use crate::path;
 use clap::Parser;
 use std::fs;
+use std::io::IsTerminal;
 use std::path::{Path, PathBuf};
 use toml_edit::DocumentMut;
 
@@ -8,6 +9,10 @@ use toml_edit::DocumentMut;
 pub struct Args {
     /// Project name (will be created as a directory)
     name: String,
+    /// Template to use, by its path under SGDK/sample (e.g. basics/hello-world).
+    /// Omitted → interactive pick on a terminal; required when non-interactive.
+    #[arg(short = 't', long = "template")]
+    template: Option<String>,
 }
 
 pub fn run(args: &Args) {
@@ -16,7 +21,7 @@ pub fn run(args: &Args) {
 
     // Check if config.toml exists
     if !config_path.exists() {
-        eprintln!("❌ config.toml not found. Please run `sgdkx setup` first.");
+        eprintln!("❌ config.toml not found. Please run `sgdkx install` first.");
         std::process::exit(1);
     }
 
@@ -36,48 +41,45 @@ pub fn run(args: &Args) {
         std::process::exit(1);
     }
 
-    // テンプレート選択
-    let template_path = select_template_dialoguer(sgdk_path);
+    // テンプレート選択（--template 指定 / TTYで対話 / 非TTYはエラー）
+    let template_path = select_template(sgdk_path, args.template.as_deref());
 
     println!("📁 Creating project from SGDK template: '{}'", name);
 
     let mut opts = fs_extra::dir::CopyOptions::new();
     opts.copy_inside = true;
-    fs_extra::dir::copy(&template_path, &dest_path, &opts).expect("Template copy failed");
+    fs_extra::dir::copy(&template_path, dest_path, &opts).expect("Template copy failed");
 
     println!("✅ Project '{}' created!", name);
 
     // Create .clangd configuration file
-    create_clangd_config(&dest_path);
+    create_clangd_config(dest_path);
 
     // Create .vscode/c_cpp_properties.json
-    create_vscode_config(&dest_path);
+    create_vscode_config(dest_path);
 
     // Create .gitignore
-    create_gitignore(&dest_path);
+    create_gitignore(dest_path);
 
     // Create the Makefile (native: makefile.gen + toolchain/JRE on PATH)
     let toolchain = get_toolchain_path(&doc);
     let jre = get_jre_path(&doc);
     create_makefile(
-        &dest_path,
-        &sgdk_path,
+        dest_path,
+        sgdk_path,
         toolchain.as_deref().map(Path::new),
         jre.as_deref().map(Path::new),
     );
 
     // Generate compile_commands.json (no external compiledb dependency).
     // base_make_command sets up PATH so `make -nwB` resolves (esp. on Windows).
-    generate_compile_commands(&doc, &dest_path);
+    generate_compile_commands(&doc, dest_path);
 }
 
-/// sample配下をdialoguerで辿ってテンプレート選択。srcがあれば確定。デフォルトはsample/basics/hello-world。
-fn select_template_dialoguer(sgdk_path: &Path) -> PathBuf {
-    use dialoguer::{Select, theme::ColorfulTheme};
-    let sample_root = sgdk_path.join("sample");
-
-    // 再帰的にsrcディレクトリを持つテンプレート候補を収集
-    fn find_templates_flat(base: &Path, rel: String, out: &mut Vec<(String, PathBuf)>) {
+/// Collect every template (a dir under SGDK/sample containing `src/`), keyed by its path
+/// relative to `sample/` (e.g. "basics/hello-world"), sorted by that key.
+fn collect_templates(sgdk_path: &Path) -> Vec<(String, PathBuf)> {
+    fn walk(base: &Path, rel: String, out: &mut Vec<(String, PathBuf)>) {
         if base.join("src").exists() {
             out.push((rel.clone(), base.to_path_buf()));
         }
@@ -86,37 +88,62 @@ fn select_template_dialoguer(sgdk_path: &Path) -> PathBuf {
                 let path = entry.path();
                 if path.is_dir() {
                     let name = entry.file_name().to_string_lossy().to_string();
-                    let new_rel = if rel.is_empty() {
-                        name
-                    } else {
-                        format!("{}/{}", rel, name)
-                    };
-                    find_templates_flat(&path, new_rel, out);
+                    let new_rel = if rel.is_empty() { name } else { format!("{rel}/{name}") };
+                    walk(&path, new_rel, out);
                 }
             }
         }
     }
-
     let mut templates = Vec::new();
-    find_templates_flat(&sample_root, String::new(), &mut templates);
+    walk(&sgdk_path.join("sample"), String::new(), &mut templates);
+    templates.sort_by(|a, b| a.0.cmp(&b.0));
+    templates
+}
 
+/// Resolve the template directory: explicit `--template <name>` wins; otherwise an interactive
+/// pick on a terminal; otherwise (non-interactive, no flag) an error listing the templates.
+fn select_template(sgdk_path: &Path, explicit: Option<&str>) -> PathBuf {
+    let templates = collect_templates(sgdk_path);
     if templates.is_empty() {
-        println!("No templates found in sample directory.");
+        eprintln!("❌ No templates found in {}", sgdk_path.join("sample").display());
         std::process::exit(1);
     }
 
-    // アルファベット順（パス順）でソート
-    let mut templates = templates;
-    templates.sort_by(|a, b| a.0.cmp(&b.0));
-    let items: Vec<_> = templates.iter().map(|(rel, _)| rel.clone()).collect();
+    let list_available = || {
+        eprintln!("Available templates:");
+        for (rel, _) in &templates {
+            eprintln!("  {rel}");
+        }
+    };
 
+    if let Some(name) = explicit {
+        return match templates.iter().find(|(rel, _)| rel == name) {
+            Some((rel, path)) => {
+                println!("Using template: {rel}");
+                path.clone()
+            }
+            None => {
+                eprintln!("❌ template '{name}' not found.");
+                list_available();
+                std::process::exit(1);
+            }
+        };
+    }
+
+    if !std::io::stdin().is_terminal() {
+        eprintln!("❌ no template selected. Re-run with --template <name> (required when non-interactive).");
+        list_available();
+        std::process::exit(1);
+    }
+
+    use dialoguer::{Select, theme::ColorfulTheme};
+    let items: Vec<&str> = templates.iter().map(|(rel, _)| rel.as_str()).collect();
     let selection = Select::with_theme(&ColorfulTheme::default())
-        .with_prompt("Select a project template from the SGDK/sample folder (Esc to cancel)")
+        .with_prompt("Select a project template from SGDK/sample (Esc to cancel)")
         .items(&items)
         .default(0)
         .interact_opt()
         .unwrap();
-
     match selection {
         Some(idx) => {
             println!("Selected template: {}", templates[idx].0);

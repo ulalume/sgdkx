@@ -10,7 +10,7 @@ pub fn run(_args: &Args) {
 
     if !target_dir.exists() {
         println!("SGDK directory does not exist: {}", target_dir.display());
-        println!("Please run `sgdkx setup` first.");
+        println!("Please run `sgdkx install` first.");
         return;
     }
 

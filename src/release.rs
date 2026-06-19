@@ -194,17 +194,32 @@ pub fn find_asset_url(repo: &str, tag: &str, name_prefix: &str) -> Result<String
         .as_array()
         .ok_or("release has no assets array")?;
     for a in assets {
-        if let Some(name) = a["name"].as_str() {
-            if name.starts_with(name_prefix) {
-                if let Some(url) = a["browser_download_url"].as_str() {
+        if let Some(name) = a["name"].as_str()
+            && name.starts_with(name_prefix)
+                && let Some(url) = a["browser_download_url"].as_str() {
                     return Ok(url.to_string());
                 }
-            }
-        }
     }
     Err(format!(
         "no asset starting with '{name_prefix}' in {repo}@{tag}"
     ))
+}
+
+/// List release tag names for a repo, in GitHub's order (newest published first).
+/// Used to populate the interactive version picker in `install`.
+pub fn list_release_tags(repo: &str) -> Result<Vec<String>, String> {
+    let json = http_json(&format!(
+        "https://api.github.com/repos/{repo}/releases?per_page=100"
+    ))?;
+    let arr = json.as_array().ok_or("unexpected releases response")?;
+    let tags: Vec<String> = arr
+        .iter()
+        .filter_map(|r| r["tag_name"].as_str().map(|s| s.to_string()))
+        .collect();
+    if tags.is_empty() {
+        return Err(format!("no releases found in {repo}"));
+    }
+    Ok(tags)
 }
 
 /// Resolve the newest `master-<sha>` release tag from the SGDK native-builds repo.
@@ -215,11 +230,10 @@ pub fn latest_master_tag(repo: &str) -> Result<String, String> {
     let arr = json.as_array().ok_or("unexpected releases response")?;
     // GitHub returns releases newest-first; take the first master-* tag.
     for r in arr {
-        if let Some(tag) = r["tag_name"].as_str() {
-            if tag.starts_with("master-") {
+        if let Some(tag) = r["tag_name"].as_str()
+            && tag.starts_with("master-") {
                 return Ok(tag.to_string());
             }
-        }
     }
     Err(format!("no master-* release found in {repo}"))
 }

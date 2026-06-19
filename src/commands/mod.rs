@@ -1,13 +1,10 @@
 pub mod blastem;
+pub mod compile_commands;
 pub mod doc;
 pub mod doctor;
 pub mod gdb;
+pub mod install;
 pub mod make;
 pub mod new;
 pub mod open;
-pub mod setup;
-pub mod setup_emu;
-pub mod setup_web;
 pub mod uninstall;
-pub mod web_export;
-pub mod web_server;
