@@ -43,7 +43,7 @@ sgdkx make
 |---|---|
 | `sgdkx install [-s/--sgdk <ver>] [-b/--blastem <ver>]` | 環境のインストール/更新（SGDK・ツールチェーン・JRE・gdb・BlastEm）。冪等で、再実行が更新になります。バージョン未指定時は端末で対話選択、非対話では最新。 |
 | `sgdkx new <name> [-t/--template <path>]` | SGDK サンプル（例 `basics/hello-world`）から雛形生成。端末ではテンプレートを対話選択、非対話では `--template` が必須。 |
-| `sgdkx make [args...]` | `make` の薄いラッパー（引数はそのまま渡す。例 `debug`・`clean`）。 |
+| `sgdkx make [args...]` | `make` の薄いラッパー（引数はそのまま渡す。例 `debug`・`clean`）。`GDK` とツールチェーン `PATH` を export するため、生成される `Makefile` はパス非依存で**コミット可能**。 |
 | `sgdkx blastem [args...]` | 同梱 BlastEm を実行（例 `sgdkx blastem out/rom.bin`）。 |
 | `sgdkx gdb [args...]` | `m68k-elf-gdb` を実行（例 `sgdkx gdb out/rom.out` の後、BlastEm の gdb スタブへ `target remote :1234`）。 |
 | `sgdkx compile-commands [-p/--path <dir>]` | ソース構成変更後に `compile_commands.json`（clangd / IDE 用）を再生成。 |
@@ -54,7 +54,7 @@ sgdkx make
 
 `compile_commands.json` は `sgdkx new` 時に自動生成されます。後から `sgdkx compile-commands` で再生成できます（`make -nwB` のドライランを解析。外部 `compiledb` は不要）。
 
-環境と `config.toml` はユーザーごとの設定ディレクトリ配下にあります（`sgdkx` / `sgdkx open` で確認可能）。
+環境と `config.toml` は `~/.sgdkx/data` 配下にあります（macOS / Linux / Windows で共通。`sgdkx` / `sgdkx open` で確認可能）。
 
 ## 謝辞
 

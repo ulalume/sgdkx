@@ -114,8 +114,13 @@ pub fn prepend_tool_path(doc: &DocumentMut) {
         paths.extend(std::env::split_paths(&orig));
     }
     let new_path = std::env::join_paths(&paths).expect("failed to build PATH");
-    // SAFETY: sgdkx is single-threaded here; set PATH right before spawning the build.
+    // Export GDK so the project's portable Makefile (`GDK ?= ...`) resolves to THIS install on
+    // every platform. Forward-slashed because MSYS make on Windows expects `/` paths. (Older
+    // Makefiles that hard-assign `GDK = <abs>` keep their value — a makefile `=` beats the env.)
+    let gdk = sgdk_path.replace('\\', "/");
+    // SAFETY: sgdkx is single-threaded here; set env right before spawning the build.
     unsafe {
+        std::env::set_var("GDK", &gdk);
         std::env::set_var("PATH", &new_path);
     }
 }

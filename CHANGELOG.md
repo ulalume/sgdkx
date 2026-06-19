@@ -13,6 +13,9 @@ CLI cleanup toward a thin, consistent, scriptable tool.
   command).
 - **Web export removed.** The experimental `setup-web`, `web-export`, and `web-server` commands
   were removed (to be redesigned). This also drops the `tokio`/`hyper` async dependency stack.
+- **Install directory unified to `~/.sgdkx/data`** on all platforms (was `~/Documents/.sgdkx/data`
+  on Windows and `~/.config/sgdkx/data` on Linux). Existing Windows/Linux installs are orphaned —
+  re-run `sgdkx install`.
 
 ### Added
 
@@ -29,6 +32,13 @@ CLI cleanup toward a thin, consistent, scriptable tool.
   - `sgdkx uninstall` gains `-y/--yes` — required (errors instead of hanging) when non-interactive.
 - Dependencies updated (toml_edit 0.25, reqwest 0.13, zip 8, dialoguer 0.12, + `cargo update`);
   removed unused `sevenz-rust`, `regex`, and `serde`.
+- **The generated project `Makefile` is now portable and committed** (no machine-specific paths;
+  removed from the project `.gitignore`). `sgdkx make` exports `GDK` + the toolchain `PATH`; the
+  `Makefile` is just `GDK ?= $(HOME)/.sgdkx/data/SGDK` + `include $(GDK)/makefile.gen`. This also
+  lets a cloned project build without re-scaffolding.
+- **Corrected generated IDE configs:** `.vscode/c_cpp_properties.json` uses `cStandard: gnu17`
+  (gcc's default; SGDK uses GNU/MS extensions) and `intelliSenseMode: gcc-x86` (m68k is ILP32);
+  `.clangd` uses `-std=gnu17`.
 
 ### System requirements
 
