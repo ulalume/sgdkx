@@ -140,39 +140,32 @@ fn install(config_dir: &Path, args: &Args) {
 /// Explicit flag wins ("master" → newest master-<sha>); otherwise interactive on a terminal,
 /// latest master when non-interactive (scriptable default).
 fn resolve_sgdk_tag(explicit: Option<&str>) -> String {
-    if let Some(v) = explicit {
-        return if v == "master" { latest_master_or_exit() } else { v.to_string() };
-    }
-    if std::io::stdin().is_terminal() {
-        match release::list_release_tags(release::SGDK_NATIVE_REPO) {
-            Ok(tags) => pick("Select an SGDK version", &tags),
-            Err(e) => {
-                eprintln!("⚠️  could not list SGDK versions ({e}); using latest master");
-                latest_master_or_exit()
-            }
-        }
-    } else {
-        latest_master_or_exit()
+    match explicit {
+        Some("master") => latest_master_or_exit(),
+        Some(v) => v.to_string(),
+        None => pick_or(release::SGDK_NATIVE_REPO, "Select an SGDK version", latest_master_or_exit),
     }
 }
 
 /// Resolve the BlastEm release tag. Explicit flag wins; otherwise interactive on a terminal,
 /// "latest" when non-interactive.
 fn resolve_blastem_tag(explicit: Option<&str>) -> String {
-    if let Some(v) = explicit {
-        return v.to_string();
+    match explicit {
+        Some(v) => v.to_string(),
+        None => pick_or(release::BLASTEM_REPO, "Select a BlastEm version", || "latest".to_string()),
     }
+}
+
+/// On a terminal, list `repo`'s release tags and let the user pick one; otherwise — or if the
+/// list can't be fetched — fall back to `latest()` (the scriptable, non-interactive default).
+fn pick_or(repo: &str, prompt: &str, latest: impl Fn() -> String) -> String {
     if std::io::stdin().is_terminal() {
-        match release::list_release_tags(release::BLASTEM_REPO) {
-            Ok(tags) => pick("Select a BlastEm version", &tags),
-            Err(e) => {
-                eprintln!("⚠️  could not list BlastEm versions ({e}); using latest");
-                "latest".to_string()
-            }
+        match release::list_release_tags(repo) {
+            Ok(tags) => return pick(prompt, &tags),
+            Err(e) => eprintln!("⚠️  could not list versions ({e}); using latest"),
         }
-    } else {
-        "latest".to_string()
     }
+    latest()
 }
 
 fn latest_master_or_exit() -> String {
