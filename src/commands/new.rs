@@ -48,6 +48,9 @@ pub fn run(args: &Args) {
     // Create .vscode/c_cpp_properties.json
     create_vscode_config(dest_path);
 
+    // Create .vscode/launch.json + tasks.json (source-level gdb debugging)
+    create_vscode_debug_config(dest_path);
+
     // Create .gitignore
     create_gitignore(dest_path);
 
@@ -286,6 +289,126 @@ pub fn create_vscode_config(project_path: &Path) {
     println!("✅ VS Code C++ configuration file created");
 }
 
+/// Write VS Code source-level debug configs (launch.json + tasks.json).
+///
+/// Portable & committable: paths are home-relative (`${userHome}`) and BlastEm is
+/// launched via `sgdkx blastem`, so there are no machine-specific paths. tasks.json
+/// builds a -O0 debug ROM (so breakpoints/locals are reliable — see the OPT note in
+/// the Makefile), starts BlastEm as a gdb server on localhost:1234, and launch.json
+/// connects via gdb. sourceFileMap / `set substitute-path` remap SGDK's CI build path
+/// (baked into the prebuilt libmd debug info) to the local install, so you can step
+/// into SGDK source too.
+///
+/// Requires the gdb-capable BlastEm — the patched build that honors `-D` and
+/// BLASTEM_GDB_PORT. `sgdkx install` provides it; if your BlastEm predates gdb
+/// support, update it (otherwise F5 connects to nothing).
+pub fn create_vscode_debug_config(project_path: &Path) {
+    println!("📄 Creating .vscode/launch.json + tasks.json (gdb debugging)...");
+
+    let vscode_dir = project_path.join(".vscode");
+    if !vscode_dir.exists() {
+        fs::create_dir_all(&vscode_dir).expect("Failed to create .vscode directory");
+    }
+
+    // gdb (m68k-elf-gdb) is launched directly by cppdbg, so it needs a real path;
+    // BlastEm goes through `sgdkx blastem` so we don't hardcode its location.
+    // The sourceFileMap "from" is the fixed path where sgdk-native-builds compiles
+    // SGDK in CI; "to" is the local install. If CI ever moves, this just falls back
+    // to "no source" (harmless).
+    let launch_json = r#"{
+  // Source-level debugging of the ROM in (patched) BlastEm via m68k-elf-gdb.
+  // Set breakpoints in src/*.c, press F5, then Continue (▶) to reach them.
+  // Drive with breakpoints + Continue; only "Step Into" your OWN functions, and
+  // don't "Step Over" the SYS_doVBlankProcess() line (frame-sync; use Continue).
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "name": "Debug ROM (BlastEm) — cpptools",
+      "type": "cppdbg",
+      "request": "launch",
+      "program": "${workspaceFolder}/out/debug/rom.out",
+      "cwd": "${workspaceFolder}",
+      "MIMode": "gdb",
+      "miDebuggerPath": "${userHome}/.sgdkx/data/m68k-elf-gdb/bin/m68k-elf-gdb",
+      "miDebuggerServerAddress": "localhost:1234",
+      "stopAtConnect": false,
+      "externalConsole": false,
+      "preLaunchTask": "blastem-gdb",
+      "sourceFileMap": {
+        "/Users/runner/work/sgdk-native-builds/sgdk-native-builds/SGDK": "${userHome}/.sgdkx/data/SGDK"
+      },
+      "setupCommands": [
+        { "description": "break at main", "text": "-break-insert main", "ignoreFailures": true }
+      ]
+    },
+    {
+      "name": "Debug ROM (BlastEm) — Native Debug",
+      "type": "gdb",
+      "request": "attach",
+      "executable": "${workspaceFolder}/out/debug/rom.out",
+      "target": "localhost:1234",
+      "remote": true,
+      "cwd": "${workspaceFolder}",
+      "gdbpath": "${userHome}/.sgdkx/data/m68k-elf-gdb/bin/m68k-elf-gdb",
+      "valuesFormatting": "parseText",
+      "stopAtConnect": false,
+      "preLaunchTask": "blastem-gdb",
+      "autorun": [
+        "set substitute-path /Users/runner/work/sgdk-native-builds/sgdk-native-builds/SGDK ${userHome}/.sgdkx/data/SGDK",
+        "break main"
+      ]
+    }
+  ]
+}
+"#;
+
+    let tasks_json = r#"{
+  // build-debug : -O0 debug ROM with DWARF (clean stepping); see the Makefile OPT note.
+  // blastem-gdb : runs the patched BlastEm as a gdb server on TCP localhost:1234.
+  //   It blocks until the debugger connects; SDL_AUDIODRIVER=dummy + BLASTEM_NO_GUI
+  //   keep headless launches from stalling on a CoreAudio error dialog.
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "label": "build-debug",
+      "type": "shell",
+      "command": "sgdkx make clean-debug && sgdkx make debug OPT=-O0",
+      "options": { "cwd": "${workspaceFolder}" },
+      "group": "build",
+      "problemMatcher": ["$gcc"]
+    },
+    {
+      "label": "blastem-gdb",
+      "type": "shell",
+      "command": "sgdkx",
+      "args": ["blastem", "${workspaceFolder}/out/debug/rom.bin", "-D"],
+      "options": {
+        "env": {
+          "BLASTEM_GDB_PORT": "1234",
+          "BLASTEM_NO_GUI": "1",
+          "SDL_AUDIODRIVER": "dummy"
+        }
+      },
+      "dependsOn": "build-debug",
+      "isBackground": true,
+      "problemMatcher": {
+        "pattern": { "regexp": "^____no_problems____$" },
+        "background": {
+          "activeOnStart": true,
+          "beginsPattern": ".",
+          "endsPattern": "Waiting for GDB connection"
+        }
+      }
+    }
+  ]
+}
+"#;
+
+    fs::write(vscode_dir.join("launch.json"), launch_json).expect("Failed to create launch.json");
+    fs::write(vscode_dir.join("tasks.json"), tasks_json).expect("Failed to create tasks.json");
+    println!("✅ VS Code debug configuration created (gdb via patched BlastEm)");
+}
+
 pub fn create_gitignore(project_path: &Path) {
     println!("📄 Creating .gitignore file...");
 
@@ -320,11 +443,23 @@ pub fn create_makefile(project_path: &Path) {
 # toolchain is on PATH. Override the install location with `GDK=/path make`.
 #
 # usage:
-#   sgdkx make           # build the project (release)
-#   sgdkx make debug     # build with debug symbols
-#   sgdkx make clean     # remove build artifacts
+#   sgdkx make                 # build the project (release)
+#   sgdkx make debug           # build with debug symbols (-O1, SGDK default)
+#   sgdkx make debug OPT=-O0   # debug build, unoptimized (best for gdb stepping)
+#   sgdkx make debug OPT=-Og   # debug build, lighter optimization
+#   sgdkx make clean           # remove build artifacts
 GDK ?= $(HOME)/.sgdkx/data/SGDK
 include $(GDK)/makefile.gen
+
+# Optional override of the debug optimization level for gdb stepping, WITHOUT
+# touching SGDK. The debug build is -O1 by default; with -O1 gcc reorders code so
+# stepping jumps around, some lines hold no code, and locals show "<optimized out>".
+# `make debug OPT=-O0` (or OPT=-Og) swaps that out for a debug-friendly level.
+# NOTE: make rebuilds on file timestamps, not flag changes — run `make clean-debug`
+# when switching OPT levels (objects under out/debug are shared).
+ifdef OPT
+override CFLAGS := $(filter-out -O1,$(CFLAGS)) $(OPT)
+endif
 "#;
 
     let makefile_path = project_path.join("Makefile");
