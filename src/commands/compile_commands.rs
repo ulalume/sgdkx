@@ -1,5 +1,5 @@
-use crate::commands::make::load_config;
 use crate::commands::new::generate_compile_commands;
+use crate::path;
 use clap::Parser;
 use std::path::Path;
 
@@ -13,7 +13,10 @@ pub struct Args {
 /// Regenerate `compile_commands.json` for a project (e.g. after adding/removing source files).
 /// Same generator `new` runs at creation time: parses a `make -nwB` dry-run, no external tools.
 pub fn run(args: &Args) {
-    let doc = load_config();
+    if !path::is_installed() {
+        eprintln!("❌ SGDK not installed. Please run `sgdkx install` first.");
+        std::process::exit(1);
+    }
     let project = Path::new(&args.path);
     if !project.is_dir() {
         eprintln!("❌ not a directory: {}", project.display());
@@ -26,5 +29,5 @@ pub fn run(args: &Args) {
         );
         std::process::exit(1);
     }
-    generate_compile_commands(&doc, project);
+    generate_compile_commands(project);
 }

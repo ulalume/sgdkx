@@ -2,7 +2,6 @@ use clap::Parser;
 use std::fs;
 use std::io::IsTerminal;
 use std::path::{Path, PathBuf};
-use toml_edit::DocumentMut;
 
 #[derive(Parser)]
 pub struct Args {
@@ -17,13 +16,11 @@ pub struct Args {
 pub fn run(args: &Args) {
     let name: &str = args.name.as_str();
 
-    // Load config (shared loader; exits with an install hint if missing).
-    let doc = crate::commands::make::load_config();
-    let (sgdk_path_str, _) = get_sgdk_config(&doc);
-    let sgdk_path = Path::new(sgdk_path_str.unwrap_or_else(|| {
-        eprintln!("SGDK path not found in config.toml.");
+    if !crate::path::is_installed() {
+        eprintln!("❌ SGDK not installed. Please run `sgdkx install` first.");
         std::process::exit(1);
-    }));
+    }
+    let sgdk_path = crate::path::sgdk_dir();
 
     let dest_path = Path::new(name);
     if dest_path.exists() {
@@ -32,7 +29,7 @@ pub fn run(args: &Args) {
     }
 
     // テンプレート選択（--template 指定 / TTYで対話 / 非TTYはエラー）
-    let template_path = select_template(sgdk_path, args.template.as_deref());
+    let template_path = select_template(&sgdk_path, args.template.as_deref());
 
     println!("📁 Creating project from SGDK template: '{}'", name);
 
@@ -59,7 +56,7 @@ pub fn run(args: &Args) {
 
     // Generate compile_commands.json (no external compiledb dependency).
     // base_make_command sets up PATH so `make -nwB` resolves (esp. on Windows).
-    generate_compile_commands(&doc, dest_path);
+    generate_compile_commands(dest_path);
 }
 
 /// Collect every template (a dir under SGDK/sample containing `src/`), keyed by its path
@@ -145,10 +142,10 @@ fn select_template(sgdk_path: &Path, explicit: Option<&str>) -> PathBuf {
 /// Generate compile_commands.json by parsing `make -nwB` output (a make dry-run),
 /// so clangd / IntelliSense work without an external `compiledb` dependency.
 /// The compile flags are deterministic (from SGDK's common.mk).
-pub fn generate_compile_commands(doc: &DocumentMut, project_path: &Path) {
+pub fn generate_compile_commands(project_path: &Path) {
     println!("🔧 Generating compile_commands.json...");
 
-    let output = match crate::commands::make::make_command(doc, &["-nwB"])
+    let output = match crate::commands::make::make_command(&["-nwB"])
         .current_dir(project_path)
         .output()
     {
@@ -199,36 +196,6 @@ pub fn generate_compile_commands(doc: &DocumentMut, project_path: &Path) {
         Ok(_) => println!("✅ compile_commands.json generated ({} entries)", entries.len()),
         Err(e) => eprintln!("⚠️  failed to write compile_commands.json: {}", e),
     }
-}
-
-/// config.tomlのsgdkインラインテーブルからpath, versionを安全に取得
-pub fn get_sgdk_config(doc: &DocumentMut) -> (Option<&str>, Option<&str>) {
-    let sgdk_table = doc.get("sgdk").and_then(|v| v.as_inline_table());
-    let path = sgdk_table
-        .and_then(|tbl| tbl.get("path"))
-        .and_then(|v| v.as_str());
-    let version = sgdk_table
-        .and_then(|tbl| tbl.get("version"))
-        .and_then(|v| v.as_str());
-    (path, version)
-}
-
-/// config.tomlのtoolchainインラインテーブルからpathを取得（Windowsではなし）
-pub fn get_toolchain_path(doc: &DocumentMut) -> Option<String> {
-    doc.get("toolchain")
-        .and_then(|v| v.as_inline_table())
-        .and_then(|tbl| tbl.get("path"))
-        .and_then(|v| v.as_str())
-        .map(|s| s.to_string())
-}
-
-/// config.tomlのjreインラインテーブルからpathを取得（無ければsystem Java）
-pub fn get_jre_path(doc: &DocumentMut) -> Option<String> {
-    doc.get("jre")
-        .and_then(|v| v.as_inline_table())
-        .and_then(|tbl| tbl.get("path"))
-        .and_then(|v| v.as_str())
-        .map(|s| s.to_string())
 }
 
 pub fn create_clangd_config(project_path: &Path) {

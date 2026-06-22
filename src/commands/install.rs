@@ -42,7 +42,7 @@ fn install(config_dir: &Path, args: &Args) {
 
     // 1. gcc 13 toolchain — Unix only (Windows bundles it inside the SGDK bundle's bin/).
     #[cfg(not(target_os = "windows"))]
-    let toolchain_dir = {
+    {
         let toolchain_dir = config_dir.join("m68k-elf-toolchain");
         if toolchain_dir.join("bin").is_dir() {
             println!("✅ gcc toolchain already present: {}", toolchain_dir.display());
@@ -63,8 +63,7 @@ fn install(config_dir: &Path, args: &Args) {
             }
             println!("✅ gcc toolchain installed: {}", toolchain_dir.display());
         }
-        toolchain_dir
-    };
+    }
 
     // 1b. m68k-elf-gdb (debugger) — standalone download on every OS. Non-fatal.
     {
@@ -125,15 +124,12 @@ fn install(config_dir: &Path, args: &Args) {
     }
 
     // 4. native BlastEm emulator — standalone download. Non-fatal (only disables `sgdkx blastem`).
-    let blastem_exe = download_blastem(config_dir, blastem_repo, &blastem_tag);
+    // Install is a side effect; the exe is later located by find_blastem, not stored in config.
+    download_blastem(config_dir, blastem_repo, &blastem_tag);
 
-    let jre_opt = jre_dir.join("bin").is_dir().then_some(jre_dir.as_path());
-    // Unix: record the separate toolchain dir. Windows: toolchain lives in the SGDK
-    // bundle's bin/, so no `[toolchain]` entry (get_toolchain_path -> None).
-    #[cfg(not(target_os = "windows"))]
-    write_config(config_dir, &sgdk_dir, &sgdk_tag, Some(&toolchain_dir), jre_opt, blastem_exe.as_deref());
-    #[cfg(target_os = "windows")]
-    write_config(config_dir, &sgdk_dir, &sgdk_tag, None, jre_opt, blastem_exe.as_deref());
+    // config.toml records only the installed SGDK version. Every path is derived from the fixed
+    // install layout under config_dir (see path.rs), so nothing else needs to be stored.
+    write_config(config_dir, &sgdk_tag);
     println!("✅ SGDK install complete: {}", sgdk_dir.display());
 }
 
@@ -303,14 +299,11 @@ fn download_blastem(config_dir: &Path, repo: &str, tag: &str) -> Option<std::pat
     }
 }
 
-fn write_config(
-    config_dir: &Path,
-    sgdk_dir: &Path,
-    version: &str,
-    toolchain_dir: Option<&Path>,
-    jre_dir: Option<&Path>,
-    blastem_exe: Option<&Path>,
-) {
+/// Write config.toml: the single non-derivable fact — which SGDK native-build version is
+/// installed. Every path is derived from the fixed install layout under config_dir (see
+/// path.rs), so nothing else is stored; legacy path/toolchain/jre/emulator entries written by
+/// older sgdkx versions are dropped on rewrite.
+fn write_config(config_dir: &Path, version: &str) {
     use toml_edit::{InlineTable, Item, Value};
     let config_path = config_dir.join("config.toml");
     let mut doc = if config_path.exists() {
@@ -322,33 +315,11 @@ fn write_config(
         DocumentMut::new()
     };
 
-    // stored as inline tables (read back via as_inline_table elsewhere)
     let mut sgdk = InlineTable::new();
-    sgdk.insert("path", Value::from(canon(sgdk_dir)));
     sgdk.insert("version", Value::from(version));
     doc.insert("sgdk", Item::Value(Value::InlineTable(sgdk)));
-
-    if let Some(tc) = toolchain_dir {
-        let mut t = InlineTable::new();
-        t.insert("path", Value::from(canon(tc)));
-        doc.insert("toolchain", Item::Value(Value::InlineTable(t)));
-    }
-    if let Some(jre) = jre_dir {
-        let mut t = InlineTable::new();
-        t.insert("path", Value::from(canon(jre)));
-        doc.insert("jre", Item::Value(Value::InlineTable(t)));
-    }
-    if let Some(exe) = blastem_exe {
-        let mut t = InlineTable::new();
-        t.insert("blastem_path", Value::from(exe.to_string_lossy().to_string()));
-        doc.insert("emulator", Item::Value(Value::InlineTable(t)));
+    for legacy in ["toolchain", "jre", "emulator"] {
+        doc.remove(legacy);
     }
     fs::write(&config_path, doc.to_string()).expect("Failed to write config.toml");
-}
-
-/// Absolute path as a string, stripping the Windows `\\?\` verbatim prefix.
-fn canon(p: &Path) -> String {
-    p.canonicalize()
-        .map(|c| c.to_string_lossy().replace(r"\\?\", ""))
-        .unwrap_or_else(|_| p.to_string_lossy().to_string())
 }
