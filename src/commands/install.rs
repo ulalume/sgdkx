@@ -13,8 +13,9 @@ pub struct Args {
     #[arg(short = 's', long = "sgdk")]
     sgdk: Option<String>,
 
-    /// BlastEm version to install: a release tag (e.g. nightly-<sha>).
-    /// Omitted → interactive pick on a terminal, latest when non-interactive.
+    /// BlastEm version: a tag (e.g. build-<sha> for the debug-capable fork, or `nightly` /
+    /// nightly-<sha> for upstream). Omitted → interactive pick (debug-capable default),
+    /// debug-capable latest when non-interactive.
     #[arg(short = 'b', long = "blastem")]
     blastem: Option<String>,
 }
@@ -37,7 +38,7 @@ fn install(config_dir: &Path, args: &Args) {
 
     // Resolve versions up front (may prompt) so the rest of the flow is non-interactive.
     let sgdk_tag = resolve_sgdk_tag(args.sgdk.as_deref());
-    let blastem_tag = resolve_blastem_tag(args.blastem.as_deref());
+    let (blastem_repo, blastem_tag) = resolve_blastem(args.blastem.as_deref());
 
     // 1. gcc 13 toolchain — Unix only (Windows bundles it inside the SGDK bundle's bin/).
     #[cfg(not(target_os = "windows"))]
@@ -124,7 +125,7 @@ fn install(config_dir: &Path, args: &Args) {
     }
 
     // 4. native BlastEm emulator — standalone download. Non-fatal (only disables `sgdkx blastem`).
-    let blastem_exe = download_blastem(config_dir, &blastem_tag);
+    let blastem_exe = download_blastem(config_dir, blastem_repo, &blastem_tag);
 
     let jre_opt = jre_dir.join("bin").is_dir().then_some(jre_dir.as_path());
     // Unix: record the separate toolchain dir. Windows: toolchain lives in the SGDK
@@ -147,13 +148,64 @@ fn resolve_sgdk_tag(explicit: Option<&str>) -> String {
     }
 }
 
-/// Resolve the BlastEm release tag. Explicit flag wins; otherwise interactive on a terminal,
-/// "latest" when non-interactive.
-fn resolve_blastem_tag(explicit: Option<&str>) -> String {
-    match explicit {
-        Some(v) => v.to_string(),
-        None => pick_or(release::BLASTEM_REPO, "Select a BlastEm version", || "latest".to_string()),
+/// Resolve `(repo, tag)` for the BlastEm download. An explicit `--blastem` wins: a `nightly`
+/// / `nightly-<sha>` value routes to the upstream nightly repo, anything else (e.g. `latest`,
+/// `build-<sha>`) to the debug-capable fork. Without it: a two-stage interactive pick on a
+/// terminal, else the debug-capable latest (scriptable default).
+fn resolve_blastem(explicit: Option<&str>) -> (&'static str, String) {
+    if let Some(v) = explicit {
+        return if v == "nightly" {
+            (release::BLASTEM_NIGHTLY_REPO, "latest".to_string())
+        } else if v.starts_with("nightly-") {
+            (release::BLASTEM_NIGHTLY_REPO, v.to_string())
+        } else {
+            (release::BLASTEM_DEBUG_REPO, v.to_string())
+        };
     }
+    if std::io::stdin().is_terminal() {
+        pick_blastem()
+    } else {
+        (release::BLASTEM_DEBUG_REPO, "latest".to_string())
+    }
+}
+
+/// Two-stage pick: first the source (debug-capable first/default, or the original upstream
+/// nightly), then the version. A lone debug-capable build is taken immediately; otherwise the
+/// versions are listed with a date hint. Falls back to that source's "latest" if listing fails.
+fn pick_blastem() -> (&'static str, String) {
+    let source = pick(
+        "Select a BlastEm source",
+        &["debug-capable".to_string(), "nightly (original)".to_string()],
+    );
+    let repo = if source == "debug-capable" {
+        release::BLASTEM_DEBUG_REPO
+    } else {
+        release::BLASTEM_NIGHTLY_REPO
+    };
+    match release::list_releases_with_dates(repo) {
+        Ok(rels) => {
+            if repo == release::BLASTEM_DEBUG_REPO && rels.len() == 1 {
+                (repo, rels[0].0.clone()) // single debug-capable build: no version prompt
+            } else {
+                (repo, pick_release("Select a BlastEm version", &rels))
+            }
+        }
+        Err(e) => {
+            eprintln!("⚠️  could not list versions ({e}); using latest");
+            (repo, "latest".to_string())
+        }
+    }
+}
+
+/// Like `pick`, but renders each release as `<tag>   (<date>)` and returns the chosen tag.
+fn pick_release(prompt: &str, rels: &[(String, String)]) -> String {
+    let labels: Vec<String> = rels
+        .iter()
+        .map(|(t, d)| if d.is_empty() { t.clone() } else { format!("{t}   ({d})") })
+        .collect();
+    let chosen = pick(prompt, &labels);
+    let idx = labels.iter().position(|l| *l == chosen).unwrap_or(0);
+    rels[idx].0.clone()
 }
 
 /// On a terminal, list `repo`'s release tags and let the user pick one; otherwise — or if the
@@ -198,7 +250,7 @@ fn pick(prompt: &str, items: &[String]) -> String {
 
 /// Download a native BlastEm build into `<config>/blastem` and return its executable path.
 /// Returns None (after a warning) on any failure — BlastEm is optional.
-fn download_blastem(config_dir: &Path, tag: &str) -> Option<std::path::PathBuf> {
+fn download_blastem(config_dir: &Path, repo: &str, tag: &str) -> Option<std::path::PathBuf> {
     let plat = release::platform();
     let install_dir = config_dir.join("blastem");
     if install_dir.exists() {
@@ -222,8 +274,8 @@ fn download_blastem(config_dir: &Path, tag: &str) -> Option<std::path::PathBuf> 
         }
     };
 
-    println!("📥 Downloading native BlastEm {tag} ({plat})...");
-    let url = match release::find_asset_url(release::BLASTEM_REPO, tag, prefix) {
+    println!("📥 Downloading native BlastEm {tag} from {repo} ({plat})...");
+    let url = match release::find_asset_url(repo, tag, prefix) {
         Ok(u) => u,
         Err(e) => {
             eprintln!("⚠️  BlastEm unavailable ({e}); `sgdkx blastem` will not work");

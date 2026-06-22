@@ -20,7 +20,11 @@ pub const GDB_REPO: &str = "ulalume/m68k-toolchain-builds";
 pub const GDB_TAG: &str = "gdb16.2-1";
 pub const GDB_VERSION: &str = "16.2";
 pub const SGDK_NATIVE_REPO: &str = "ulalume/sgdk-native-builds";
-pub const BLASTEM_REPO: &str = "ulalume/blastem-builds";
+/// Patched, debug-capable BlastEm fork (GDB remote + scriptable control socket + embedded
+/// font). The default BlastEm source; builds all platforms from its own build.yml.
+pub const BLASTEM_DEBUG_REPO: &str = "ulalume/blastem";
+/// Upstream BlastEm, auto-tracked nightly (unmodified). The "original" alternative.
+pub const BLASTEM_NIGHTLY_REPO: &str = "ulalume/blastem-builds";
 pub const JRE_REPO: &str = "ulalume/jre-builds";
 pub const JRE_TAG: &str = "jdk21-1";
 
@@ -220,6 +224,56 @@ pub fn list_release_tags(repo: &str) -> Result<Vec<String>, String> {
         return Err(format!("no releases found in {repo}"));
     }
     Ok(tags)
+}
+
+/// List a repo's releases as `(tag, date)` pairs, newest first, for the version picker.
+/// `date` is the upstream changeset date when the release body carries one (nightly builds
+/// embed `Date: <date>`), otherwise the release's publish date — a "when is this" hint.
+pub fn list_releases_with_dates(repo: &str) -> Result<Vec<(String, String)>, String> {
+    let json = http_json(&format!(
+        "https://api.github.com/repos/{repo}/releases?per_page=100"
+    ))?;
+    let arr = json.as_array().ok_or("unexpected releases response")?;
+    let out: Vec<(String, String)> = arr
+        .iter()
+        .filter_map(|r| {
+            let tag = r["tag_name"].as_str()?.to_string();
+            let date = body_date(r["body"].as_str())
+                .or_else(|| r["published_at"].as_str().map(short_date))
+                .unwrap_or_default();
+            Some((tag, date))
+        })
+        .collect();
+    if out.is_empty() {
+        return Err(format!("no releases found in {repo}"));
+    }
+    Ok(out)
+}
+
+/// The first `YYYY-MM-DD` appearing after a `Date:` marker in a release body (nightly builds
+/// embed the upstream changeset date there). `None` if absent. Scans raw bytes (the target is
+/// pure ASCII) so a multi-byte char elsewhere in the body can't cause a slice panic.
+fn body_date(body: Option<&str>) -> Option<String> {
+    let s = body?;
+    let b = s.as_bytes();
+    let start = s.find("Date:")?;
+    (start..b.len().saturating_sub(9))
+        .find(|&i| is_ymd(&b[i..i + 10]))
+        .map(|i| String::from_utf8_lossy(&b[i..i + 10]).into_owned())
+}
+
+fn is_ymd(b: &[u8]) -> bool {
+    b.len() == 10
+        && b[4] == b'-'
+        && b[7] == b'-'
+        && b[..4].iter().all(u8::is_ascii_digit)
+        && b[5..7].iter().all(u8::is_ascii_digit)
+        && b[8..].iter().all(u8::is_ascii_digit)
+}
+
+/// `2026-06-22T01:23:45Z` -> `2026-06-22`.
+fn short_date(iso: &str) -> String {
+    iso.get(0..10).unwrap_or(iso).to_string()
 }
 
 /// Resolve the newest `master-<sha>` release tag from the SGDK native-builds repo.
