@@ -1,5 +1,17 @@
 # Changelog
 
+## 0.4.1
+
+### Changed
+
+- **Trimmed the generated project `Makefile` comments** — dropped self-evident notes (e.g.
+  "safe to commit; no personal paths") and the redundant "plain `make` works too" hint, kept a
+  concise usage block and the `make debug` tuning rationale. The build logic is unchanged.
+- **Docs:** simplified the `sgdkx make` description in the README to match.
+
+Verified on Linux (Docker, x86_64 + arm64): `install`, `new`, `make debug`, and source-level
+gdb debugging via the patched BlastEm all work.
+
 ## 0.4.0
 
 CLI cleanup toward a thin, consistent, scriptable tool.
