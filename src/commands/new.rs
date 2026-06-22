@@ -444,28 +444,26 @@ pub fn create_makefile(project_path: &Path) {
 #
 # usage:
 #   sgdkx make                 # build the project (release)
-#   sgdkx make debug           # debuggable build (-O0 + clean SGDK lib; see below)
+#   sgdkx make debug           # debuggable build (-O0, your code; small ROM)
 #   sgdkx make debug OPT=-Og   # debug build, lighter optimization
-#   sgdkx make debug SGDK_DEBUG=1  # link libmd_debug.a (step into SGDK; debug info is rough)
+#   sgdkx make debug SGDK_DEBUG=1  # also step into SGDK source (needs SGDK >= 2.10)
 #   sgdkx make clean           # remove build artifacts
 GDK ?= $(HOME)/.sgdkx/data/SGDK
 include $(GDK)/makefile.gen
 
-# Make `make debug` actually debuggable, WITHOUT touching SGDK. Two fixes:
+# `make debug` is tuned for source-level debugging:
 #
 # 1) Optimization: SGDK's debug build is -O1, which reorders code (stepping jumps,
-#    locals show "<optimized out>", some lines hold no code). Default to -O0 so
-#    breakpoints and variables are reliable; override with OPT=-Og etc.
-#    `OPT ?=` means even a bare `make debug` is -O0 — no flag to remember.
+#    locals show "<optimized out>"). Default to -O0 so breakpoints and variables
+#    are reliable; override with OPT=-Og etc. `OPT ?=` makes even a bare
+#    `make debug` -O0 — no flag to remember.
 #
-# 2) SGDK library symbols: the prebuilt libmd_debug.a has broken DWARF — its
-#    functions (e.g. doBlit) are recorded at address 0x0, so they OVERLAP your
-#    code's addresses and the debugger mis-resolves your PC to bmp.c/doBlit.
-#    Link the non-debug libmd.a instead: your own code debugs cleanly; you just
-#    can't step into SGDK source. Opt back in with SGDK_DEBUG=1 (rough, see above).
+# 2) SGDK library: link the lean non-debug libmd.a so your own code debugs cleanly
+#    and the debug ROM stays small. To ALSO step into SGDK source, use SGDK_DEBUG=1
+#    (links libmd_debug.a; larger ROM; needs an SGDK build >= 2.10).
 #
-# NOTE: make rebuilds on file timestamps, not flag changes — run `make clean-debug`
-# when switching OPT levels.
+# make rebuilds on file timestamps, not flag changes — run `make clean-debug`
+# when switching OPT / SGDK_DEBUG.
 ifeq ($(BUILD_TYPE),debug)
 OPT ?= -O0
 override CFLAGS := $(filter-out -O1,$(CFLAGS)) $(OPT)
