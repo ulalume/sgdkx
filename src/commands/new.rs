@@ -444,21 +444,34 @@ pub fn create_makefile(project_path: &Path) {
 #
 # usage:
 #   sgdkx make                 # build the project (release)
-#   sgdkx make debug           # build with debug symbols (-O1, SGDK default)
-#   sgdkx make debug OPT=-O0   # debug build, unoptimized (best for gdb stepping)
+#   sgdkx make debug           # debuggable build (-O0 + clean SGDK lib; see below)
 #   sgdkx make debug OPT=-Og   # debug build, lighter optimization
+#   sgdkx make debug SGDK_DEBUG=1  # link libmd_debug.a (step into SGDK; debug info is rough)
 #   sgdkx make clean           # remove build artifacts
 GDK ?= $(HOME)/.sgdkx/data/SGDK
 include $(GDK)/makefile.gen
 
-# Optional override of the debug optimization level for gdb stepping, WITHOUT
-# touching SGDK. The debug build is -O1 by default; with -O1 gcc reorders code so
-# stepping jumps around, some lines hold no code, and locals show "<optimized out>".
-# `make debug OPT=-O0` (or OPT=-Og) swaps that out for a debug-friendly level.
+# Make `make debug` actually debuggable, WITHOUT touching SGDK. Two fixes:
+#
+# 1) Optimization: SGDK's debug build is -O1, which reorders code (stepping jumps,
+#    locals show "<optimized out>", some lines hold no code). Default to -O0 so
+#    breakpoints and variables are reliable; override with OPT=-Og etc.
+#    `OPT ?=` means even a bare `make debug` is -O0 — no flag to remember.
+#
+# 2) SGDK library symbols: the prebuilt libmd_debug.a has broken DWARF — its
+#    functions (e.g. doBlit) are recorded at address 0x0, so they OVERLAP your
+#    code's addresses and the debugger mis-resolves your PC to bmp.c/doBlit.
+#    Link the non-debug libmd.a instead: your own code debugs cleanly; you just
+#    can't step into SGDK source. Opt back in with SGDK_DEBUG=1 (rough, see above).
+#
 # NOTE: make rebuilds on file timestamps, not flag changes — run `make clean-debug`
-# when switching OPT levels (objects under out/debug are shared).
-ifdef OPT
+# when switching OPT levels.
+ifeq ($(BUILD_TYPE),debug)
+OPT ?= -O0
 override CFLAGS := $(filter-out -O1,$(CFLAGS)) $(OPT)
+ifndef SGDK_DEBUG
+override LIBMD := $(LIB)/libmd.a
+endif
 endif
 "#;
 
