@@ -262,9 +262,10 @@ pub fn create_vscode_config(project_path: &Path) {
 /// launched via `sgdkx blastem`, so there are no machine-specific paths. tasks.json
 /// builds a -O0 debug ROM (so breakpoints/locals are reliable — see the OPT note in
 /// the Makefile), starts BlastEm as a gdb server on localhost:1234, and launch.json
-/// connects via gdb. sourceFileMap / `set substitute-path` remap SGDK's CI build path
-/// (baked into the prebuilt libmd debug info) to the local install, so you can step
-/// into SGDK source too.
+/// connects via gdb. The default configs link the lean libmd.a (debug your own code,
+/// small ROM); the "+ SGDK source" config rebuilds with SGDK_DEBUG=1 and, via
+/// sourceFileMap / `set substitute-path` remapping SGDK's CI build path (baked into
+/// libmd_debug.a) to the local install, lets you step into SGDK source too.
 ///
 /// Requires the gdb-capable BlastEm — the patched build that honors `-D` and
 /// BLASTEM_GDB_PORT. `sgdkx install` provides it; if your BlastEm predates gdb
@@ -285,12 +286,14 @@ pub fn create_vscode_debug_config(project_path: &Path) {
     let launch_json = r#"{
   // Source-level debugging of the ROM in (patched) BlastEm via m68k-elf-gdb.
   // Set breakpoints in src/*.c, press F5, then Continue (▶) to reach them.
-  // Drive with breakpoints + Continue; only "Step Into" your OWN functions, and
-  // don't "Step Over" the SYS_doVBlankProcess() line (frame-sync; use Continue).
+  // Drive with breakpoints + Continue; don't "Step Over" the SYS_doVBlankProcess()
+  // line (frame-sync; use Continue). Pick a config from the Run and Debug dropdown:
+  //   "Debug ROM (BlastEm)"               debug your own code (lean libmd.a; small/fast)
+  //   "Debug ROM (BlastEm) + SGDK source" also step into SGDK functions (SGDK_DEBUG=1)
   "version": "0.2.0",
   "configurations": [
     {
-      "name": "Debug ROM (BlastEm) — cpptools",
+      "name": "Debug ROM (BlastEm)",
       "type": "cppdbg",
       "request": "launch",
       "program": "${workspaceFolder}/out/debug/rom.out",
@@ -309,20 +312,22 @@ pub fn create_vscode_debug_config(project_path: &Path) {
       ]
     },
     {
-      "name": "Debug ROM (BlastEm) — Native Debug",
-      "type": "gdb",
-      "request": "attach",
-      "executable": "${workspaceFolder}/out/debug/rom.out",
-      "target": "localhost:1234",
-      "remote": true,
+      "name": "Debug ROM (BlastEm) + SGDK source",
+      "type": "cppdbg",
+      "request": "launch",
+      "program": "${workspaceFolder}/out/debug/rom.out",
       "cwd": "${workspaceFolder}",
-      "gdbpath": "${userHome}/.sgdkx/data/m68k-elf-gdb/bin/m68k-elf-gdb",
-      "valuesFormatting": "parseText",
+      "MIMode": "gdb",
+      "miDebuggerPath": "${userHome}/.sgdkx/data/m68k-elf-gdb/bin/m68k-elf-gdb",
+      "miDebuggerServerAddress": "localhost:1234",
       "stopAtConnect": false,
-      "preLaunchTask": "blastem-gdb",
-      "autorun": [
-        "set substitute-path /Users/runner/work/sgdk-native-builds/sgdk-native-builds/SGDK ${userHome}/.sgdkx/data/SGDK",
-        "break main"
+      "externalConsole": false,
+      "preLaunchTask": "blastem-gdb-sgdk",
+      "sourceFileMap": {
+        "/Users/runner/work/sgdk-native-builds/sgdk-native-builds/SGDK": "${userHome}/.sgdkx/data/SGDK"
+      },
+      "setupCommands": [
+        { "description": "break at main", "text": "-break-insert main", "ignoreFailures": true }
       ]
     }
   ]
@@ -330,16 +335,26 @@ pub fn create_vscode_debug_config(project_path: &Path) {
 "#;
 
     let tasks_json = r#"{
-  // build-debug : -O0 debug ROM with DWARF (clean stepping); see the Makefile OPT note.
-  // blastem-gdb : runs the patched BlastEm as a gdb server on TCP localhost:1234.
-  //   It blocks until the debugger connects; SDL_AUDIODRIVER=dummy + BLASTEM_NO_GUI
-  //   keep headless launches from stalling on a CoreAudio error dialog.
+  // build-debug      : -O0 debug ROM with DWARF, lean libmd.a (debug your code; small ROM).
+  // build-debug-sgdk : same + SGDK_DEBUG=1 -> libmd_debug.a, so you can step into SGDK
+  //                    source too (larger ROM, slower link; needs SGDK >= 2.10).
+  // blastem-gdb[-sgdk] : run the patched BlastEm as a gdb server on TCP localhost:1234 after
+  //   the matching build. Blocks until the debugger connects; SDL_AUDIODRIVER=dummy +
+  //   BLASTEM_NO_GUI keep headless launches from stalling on a CoreAudio error dialog.
   "version": "2.0.0",
   "tasks": [
     {
       "label": "build-debug",
       "type": "shell",
       "command": "sgdkx make clean-debug && sgdkx make debug OPT=-O0",
+      "options": { "cwd": "${workspaceFolder}" },
+      "group": "build",
+      "problemMatcher": ["$gcc"]
+    },
+    {
+      "label": "build-debug-sgdk",
+      "type": "shell",
+      "command": "sgdkx make clean-debug && sgdkx make debug OPT=-O0 SGDK_DEBUG=1",
       "options": { "cwd": "${workspaceFolder}" },
       "group": "build",
       "problemMatcher": ["$gcc"]
@@ -357,6 +372,29 @@ pub fn create_vscode_debug_config(project_path: &Path) {
         }
       },
       "dependsOn": "build-debug",
+      "isBackground": true,
+      "problemMatcher": {
+        "pattern": { "regexp": "^____no_problems____$" },
+        "background": {
+          "activeOnStart": true,
+          "beginsPattern": ".",
+          "endsPattern": "Waiting for GDB connection"
+        }
+      }
+    },
+    {
+      "label": "blastem-gdb-sgdk",
+      "type": "shell",
+      "command": "sgdkx",
+      "args": ["blastem", "${workspaceFolder}/out/debug/rom.bin", "-D"],
+      "options": {
+        "env": {
+          "BLASTEM_GDB_PORT": "1234",
+          "BLASTEM_NO_GUI": "1",
+          "SDL_AUDIODRIVER": "dummy"
+        }
+      },
+      "dependsOn": "build-debug-sgdk",
       "isBackground": true,
       "problemMatcher": {
         "pattern": { "regexp": "^____no_problems____$" },

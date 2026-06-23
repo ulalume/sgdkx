@@ -1,5 +1,23 @@
 # Changelog
 
+## 0.4.2
+
+### Added
+
+- **`sgdkx new` can now debug into SGDK source from VS Code.** Next to the default
+  "Debug ROM (BlastEm)" (lean `libmd.a` — debug your own code, small/fast), there is a new
+  **"Debug ROM (BlastEm) + SGDK source"** launch config and a `build-debug-sgdk` task that
+  rebuilds with `SGDK_DEBUG=1` (`libmd_debug.a`), so you can step into SGDK functions. Before,
+  F5 always rebuilt the lean ROM, so a manual `SGDK_DEBUG=1` build got overwritten and SGDK
+  source-level debugging was unreachable from the GUI.
+
+### Changed
+
+- Generated launch configs trimmed to the two cpptools entries with clearer labels
+  (dropped the separate webfreak.debug "Native Debug" config; pick it back up by copying the
+  pattern if you use that extension). Existing projects: re-run `sgdkx new` or copy the new
+  `.vscode/launch.json` + `tasks.json` to get the SGDK-source config.
+
 ## 0.4.1
 
 ### Changed
