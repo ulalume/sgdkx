@@ -1,7 +1,7 @@
 use crate::path;
 
 pub fn run() {
-    println!("\n🩺 sgdkx Environment Check");
+    println!("\n🩺 sgdkx v{}", env!("CARGO_PKG_VERSION"));
 
     // On Unix, `make` is the system one (required). On Windows, make (and the whole
     // toolchain + MSYS shell) is bundled in SGDK/bin and used via `sgdkx make`, so no
