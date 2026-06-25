@@ -14,7 +14,7 @@ use commands::new;
 use commands::open;
 use commands::uninstall;
 
-/// Unofficial tools for SGDK workflow
+/// One-command native SGDK dev environment. Unofficial, cross-platform CLI.
 #[derive(Parser)]
 #[command(name = "sgdkx")]
 #[command(version = env!("CARGO_PKG_VERSION"))]

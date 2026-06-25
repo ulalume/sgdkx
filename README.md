@@ -1,8 +1,8 @@
 # sgdkx
 
-`sgdkx` is a native, cross-platform CLI for developing with [SGDK](https://github.com/Stephane-D/SGDK) (Sega Mega Drive / Genesis Development Kit).
+**One-command native SGDK dev environment. Unofficial, cross-platform CLI.**
 
-It downloads and manages a **self-contained** SGDK environment — SGDK, the m68k gcc toolchain, a bundled JRE, m68k-elf-gdb, and the BlastEm emulator.
+`sgdkx` downloads and manages a **self-contained** [SGDK](https://github.com/Stephane-D/SGDK) (Sega Mega Drive / Genesis Development Kit) environment — SGDK, the m68k gcc toolchain, a bundled JRE, m68k-elf-gdb, and the BlastEm emulator.
 
 ## Installation
 
