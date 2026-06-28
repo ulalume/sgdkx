@@ -1,5 +1,22 @@
 # Changelog
 
+## 0.4.3
+
+### Fixed
+
+- **Generated `.vscode/c_cpp_properties.json` now resolves `<genesis.h>` in rescomp-generated
+  `res/*.h` headers.** Those headers aren't compile units, so they're absent from
+  `compile_commands.json` and cpptools reported `cannot open source file "genesis.h"`. Added an
+  `includePath` (+ `SGDK_GCC` define) fallback at `~/.sgdkx/data/SGDK/inc` for files not covered
+  by `compile_commands.json`. Home-relative paths only — stays portable. Existing projects: re-run
+  `sgdkx new` or copy the new `.vscode/c_cpp_properties.json` (then reload the C/C++ extension).
+
+### Changed
+
+- **`sgdkx` (any no-arg run) now prints its version** in the doctor header: `🩺 sgdkx v0.4.3`.
+- **Reworded the crate description / `--help` about / README** to lead with the value prop:
+  *"One-command native SGDK dev environment. Unofficial, cross-platform CLI."*
+
 ## 0.4.2
 
 ### Added
