@@ -1,5 +1,23 @@
 # Changelog
 
+## 0.4.4
+
+### Fixed
+
+- **IntelliSense resolves the toolchain's system headers (`<stdint.h>` → `uint8_t`, etc.).**
+  `sgdkx compile-commands` (and `sgdkx new`) now write the **absolute path to the bundled
+  `m68k-elf-gcc`** in each compile command, not a bare name. The bundled toolchain isn't on the
+  global PATH (only `sgdkx make` adds it), so a bare compiler name left cpptools/clangd unable to
+  query the compiler for its system include dir — `.c` files reported
+  `identifier "uint8_t" is undefined`. Any tool reading `compile_commands.json` now resolves the
+  correct gcc 13.2.0 directly, no per-editor `compilerPath` needed for `.c` files.
+- Generated `.vscode/c_cpp_properties.json` also gained a `compilerPath` (the bundled gcc), so
+  standalone headers not in `compile_commands.json` — e.g. rescomp's `res/*.h` that
+  `#include <genesis.h>` — resolve system + SGDK headers too.
+
+`compile_commands.json` is gitignored and regenerated per machine, so these absolute paths stay
+local. Existing projects: re-run `sgdkx compile-commands` and reload the C/C++ extension.
+
 ## 0.4.3
 
 ### Fixed
