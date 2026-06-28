@@ -237,13 +237,24 @@ pub fn create_vscode_config(project_path: &Path) {
     // intelliSenseMode: m68k is ILP32 (int/long/pointer = 4 bytes); `gcc-x86` matches those sizes
     //   far better than `gcc-x64` (8-byte pointers). cpptools has no m68k mode; for files in
     //   compile_commands.json the real m68k-elf-gcc invocation is used regardless.
+    // includePath/defines: a fallback for files NOT in compile_commands.json — notably the
+    //   rescomp-generated res/*.h, which `#include <genesis.h>`. Without it cpptools can't find
+    //   genesis.h ($GDK/inc) when such a header is opened ("cannot open source file genesis.h").
+    //   Paths are home-relative (~/.sgdkx/data is the unified install on every OS), so this stays
+    //   portable/committable; no machine- or OS-specific compilerPath.
     let cpp_properties_content = r#"{
     "configurations": [
       {
         "name": "sgdk",
+        "compileCommands": "${workspaceFolder}/compile_commands.json",
         "cStandard": "gnu17",
         "intelliSenseMode": "gcc-x86",
-        "compileCommands": "${workspaceFolder}/compile_commands.json"
+        "includePath": [
+          "${workspaceFolder}/**",
+          "${userHome}/.sgdkx/data/SGDK/inc",
+          "${userHome}/.sgdkx/data/SGDK/res"
+        ],
+        "defines": [ "SGDK_GCC" ]
       }
     ],
     "version": 4
