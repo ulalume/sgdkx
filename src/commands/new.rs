@@ -237,16 +237,21 @@ pub fn create_vscode_config(project_path: &Path) {
     // intelliSenseMode: m68k is ILP32 (int/long/pointer = 4 bytes); `gcc-x86` matches those sizes
     //   far better than `gcc-x64` (8-byte pointers). cpptools has no m68k mode; for files in
     //   compile_commands.json the real m68k-elf-gcc invocation is used regardless.
-    // includePath/defines: a fallback for files NOT in compile_commands.json — notably the
-    //   rescomp-generated res/*.h, which `#include <genesis.h>`. Without it cpptools can't find
-    //   genesis.h ($GDK/inc) when such a header is opened ("cannot open source file genesis.h").
-    //   Paths are home-relative (~/.sgdkx/data is the unified install on every OS), so this stays
-    //   portable/committable; no machine- or OS-specific compilerPath.
+    // includePath/defines: fallback for files NOT in compile_commands.json — notably the
+    //   rescomp-generated res/*.h, which `#include <genesis.h>` ($GDK/inc): without it cpptools
+    //   shows "cannot open source file genesis.h".
+    // compilerPath: the bundled m68k-elf-gcc. cpptools needs an explicit compiler to query for
+    //   the toolchain system headers + intrinsics (e.g. <stdint.h>'s uint8_t); without it, even
+    //   .c files in compile_commands.json get "identifier uint8_t is undefined" (the compile
+    //   command names a bare `m68k-elf-gcc`, which cpptools won't run on its own). This is the
+    //   macOS/Linux toolchain path; on Windows gcc lives in SGDK/bin and compile_commands carries
+    //   its absolute path, so a stale path here is only a harmless warning. Home-relative.
     let cpp_properties_content = r#"{
     "configurations": [
       {
         "name": "sgdk",
         "compileCommands": "${workspaceFolder}/compile_commands.json",
+        "compilerPath": "${userHome}/.sgdkx/data/m68k-elf-toolchain/bin/m68k-elf-gcc",
         "cStandard": "gnu17",
         "intelliSenseMode": "gcc-x86",
         "includePath": [
