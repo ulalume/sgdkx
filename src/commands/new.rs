@@ -162,6 +162,20 @@ pub fn generate_compile_commands(project_path: &Path) {
         .unwrap_or_else(|_| project_path.to_path_buf());
     let dir_str = dir.to_string_lossy().replace(r"\\?\", "");
 
+    // Make the generated compile_commands self-contained: rewrite the build's bare
+    // `m68k-elf-gcc` to the bundled toolchain's absolute path. cpptools/clangd read the command
+    // directly to find the compiler's system headers (e.g. <stdint.h>) + intrinsics; a bare name
+    // isn't resolvable because the toolchain isn't on the global PATH (it's only added during
+    // `sgdkx make`). On Windows SGDK's CC is already an absolute $(BIN)/gcc — no bare token to
+    // rewrite. compile_commands.json is gitignored + regenerated per machine, so an absolute path
+    // is fine (it already carries absolute -isystem paths).
+    let abs_cc: Option<String> = crate::path::toolchain_dir().map(|tc| {
+        tc.join("bin")
+            .join("m68k-elf-gcc")
+            .to_string_lossy()
+            .replace(r"\\?\", "")
+    });
+
     let mut entries: Vec<serde_json::Value> = Vec::new();
     for line in stdout.lines() {
         let line = line.trim();
@@ -180,9 +194,14 @@ pub fn generate_compile_commands(project_path: &Path) {
             Some(f) if f.ends_with(".c") => f,
             _ => continue,
         };
+        // absolute-ize a leading bare `m68k-elf-gcc` token (see abs_cc above)
+        let command = abs_cc
+            .as_deref()
+            .and_then(|abs| line.strip_prefix("m68k-elf-gcc ").map(|rest| format!("{abs} {rest}")))
+            .unwrap_or_else(|| line.to_string());
         entries.push(serde_json::json!({
             "directory": dir_str,
-            "command": line,
+            "command": command,
             "file": file,
         }));
     }
