@@ -1,5 +1,12 @@
 # Changelog
 
+## Unreleased
+
+### Fixed
+
+- **`sgdkx install` no longer needs a system `tar`.** `.tar.gz` assets are now extracted in-process
+  (tar + flate2 crates), fixing `failed to run tar: No such file or directory (os error 2)`.
+
 ## 0.4.4
 
 ### Fixed
