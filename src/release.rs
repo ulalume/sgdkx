@@ -3,7 +3,6 @@
 // Wine-based flow with native binaries downloaded from GitHub Releases.
 
 use std::path::Path;
-use std::process::Command;
 
 // --- component sources (pinned) ---
 // The toolchain is a separate download only on Unix; on Windows it's baked into the
@@ -115,21 +114,14 @@ fn try_download(url: &str, dest: &Path) -> Result<(), String> {
     Ok(())
 }
 
-/// Extract a `.tar.gz` archive into `dest_dir` (uses the system `tar`, present on
-/// Linux, macOS, and Windows 10+).
+/// Extract a `.tar.gz` archive into `dest_dir` in-process (tar + flate2 crates), so no
+/// system `tar` is needed. Keeps the mode bits (exec bit on Unix), symlinks and hard links.
 pub fn extract_tar_gz(archive: &Path, dest_dir: &Path) -> Result<(), String> {
     std::fs::create_dir_all(dest_dir).map_err(|e| e.to_string())?;
-    let status = Command::new("tar")
-        .arg("xzf")
-        .arg(archive)
-        .arg("-C")
-        .arg(dest_dir)
-        .status()
-        .map_err(|e| format!("failed to run tar: {e}"))?;
-    if !status.success() {
-        return Err("tar extraction failed".into());
-    }
-    Ok(())
+    let file = std::fs::File::open(archive).map_err(|e| e.to_string())?;
+    let mut tar = tar::Archive::new(flate2::read::GzDecoder::new(file));
+    tar.unpack(dest_dir)
+        .map_err(|e| format!("tar extraction failed: {e}"))
 }
 
 /// Download a `.tar.gz` from `url` and extract it into `dest_dir`.
